@@ -31,6 +31,8 @@ public static class AppStrings
     public static string DiaryLanguageLabel => IsRussian ? "Язык дневника" : "Diary Language";
     public static string TranslationLanguageLabel => IsRussian ? "Язык перевода" : "Translation Language";
     public static string DefaultPersonaLabel => IsRussian ? "Архетип AI-собеседника по умолчанию" : "Default AI Companion Persona";
+    public static string ShowBotPromptTranslationLabel => IsRussian ? "Перевод вопросов AI-бота" : "Translate AI bot questions";
+    public static string ShowBotPromptTranslationHint => IsRussian ? "Показывать перевод подсказок и вопросов бота под оригиналом" : "Display translation under bot prompts and kick-questions";
     public static string StartNewEntryButton => IsRussian ? "✍️ Начать новую запись" : "✍️ Start New Entry";
     public static string HistoryButton => IsRussian ? "📖 История записей" : "📖 Diary History";
     public static string SaveSettingsButton => IsRussian ? "Сохранить настройки" : "Save Settings";
@@ -49,6 +51,8 @@ public static class AppStrings
     public static string AnalysisHeader => IsRussian ? "🔎 Анализ предложения" : "🔎 Sentence Analysis";
     public static string AnalysisCorrectHeader => IsRussian ? "✅ Предложение составлено верно!" : "✅ Sentence is correct!";
     public static string AnalysisNeedsFixHeader => IsRussian ? "✏️ Предложены исправления:" : "✏️ Suggested corrections:";
+    public static string CorrectBadgeText => IsRussian ? "✅ ПРЕДЛОЖЕНИЕ ВЕРНО" : "✅ SENTENCE IS CORRECT";
+    public static string FixesBadgeText => IsRussian ? "✏️ ЕСТЬ ИСПРАВЛЕНИЯ" : "✏️ CORRECTIONS SUGGESTED";
     public static string BackButtonText => IsRussian ? "Назад" : "Back";
     public static string ApplyFixButton => IsRussian ? "🪄 Применить" : "🪄 Apply Fix";
     public static string InputPlaceholder => IsRussian ? "Напишите следующее предложение..." : "Write your next sentence...";

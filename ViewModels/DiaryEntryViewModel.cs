@@ -26,6 +26,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasPendingAnalysis))]
     [NotifyPropertyChangedFor(nameof(IsAnalysisCorrect))]
+    [NotifyPropertyChangedFor(nameof(HasAnalysisCorrections))]
     [NotifyPropertyChangedFor(nameof(AnalysisHeader))]
     [NotifyPropertyChangedFor(nameof(AnalysisCardBackground))]
     [NotifyPropertyChangedFor(nameof(AnalysisCardStroke))]
@@ -43,7 +44,12 @@ public partial class DiaryEntryViewModel : BaseViewModel
     private string? _currentPromptQuestion;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPromptTranslationAndEnabled))]
     private string? _currentPromptQuestionTranslation;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPromptTranslationAndEnabled))]
+    private bool _showPromptTranslation = true;
 
     [ObservableProperty]
     private PersonaType _activePersona = PersonaType.Friend;
@@ -57,7 +63,12 @@ public partial class DiaryEntryViewModel : BaseViewModel
 
     public bool HasPendingAnalysis => PendingAnalysis != null;
     public bool IsAnalysisCorrect => PendingAnalysis != null && !PendingAnalysis.HasCorrections;
+    public bool HasAnalysisCorrections => PendingAnalysis != null && PendingAnalysis.HasCorrections;
     public bool HasActivePrompt => !string.IsNullOrWhiteSpace(CurrentPromptQuestion);
+    public bool HasPromptTranslationAndEnabled => ShowPromptTranslation && !string.IsNullOrWhiteSpace(CurrentPromptQuestionTranslation);
+
+    public string CorrectBadgeText => AppStrings.CorrectBadgeText;
+    public string FixesBadgeText => AppStrings.FixesBadgeText;
 
     public string AnalysisHeader => (PendingAnalysis != null && !PendingAnalysis.HasCorrections)
         ? AppStrings.AnalysisCorrectHeader
@@ -113,6 +124,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
     public async Task InitializeAsync()
     {
         ActivePersona = _settingsService.GetDefaultPersona();
+        ShowPromptTranslation = _settingsService.GetShowBotPromptTranslation();
 
         if (!string.IsNullOrWhiteSpace(EntryId))
         {
@@ -289,15 +301,24 @@ public partial class DiaryEntryViewModel : BaseViewModel
             {
                 CurrentPromptQuestion = question;
 
-                var translation = await _translateService.TranslateTextAsync(
-                    question, 
-                    _entry.SourceLanguage, 
-                    _entry.TargetLanguage, 
-                    cts.Token
-                );
+                if (ShowPromptTranslation)
+                {
+                    var translation = await _translateService.TranslateTextAsync(
+                        question, 
+                        _entry.SourceLanguage, 
+                        _entry.TargetLanguage, 
+                        cts.Token
+                    );
 
-                CurrentPromptQuestionTranslation = translation;
+                    CurrentPromptQuestionTranslation = translation;
+                }
+                else
+                {
+                    CurrentPromptQuestionTranslation = null;
+                }
+
                 OnPropertyChanged(nameof(HasActivePrompt));
+                OnPropertyChanged(nameof(HasPromptTranslationAndEnabled));
             }
         }
         catch (Exception ex)
@@ -309,6 +330,32 @@ public partial class DiaryEntryViewModel : BaseViewModel
         {
             IsGeneratingPrompt = false;
         }
+    }
+
+    [RelayCommand]
+    public async Task TogglePromptTranslationAsync()
+    {
+        ShowPromptTranslation = !ShowPromptTranslation;
+
+        if (ShowPromptTranslation && string.IsNullOrWhiteSpace(CurrentPromptQuestionTranslation) && !string.IsNullOrWhiteSpace(CurrentPromptQuestion))
+        {
+            try
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+                CurrentPromptQuestionTranslation = await _translateService.TranslateTextAsync(
+                    CurrentPromptQuestion, 
+                    _entry.SourceLanguage, 
+                    _entry.TargetLanguage, 
+                    cts.Token
+                );
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
+        OnPropertyChanged(nameof(HasPromptTranslationAndEnabled));
     }
 
     [RelayCommand]

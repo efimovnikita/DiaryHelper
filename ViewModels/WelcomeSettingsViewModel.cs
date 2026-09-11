@@ -54,6 +54,12 @@ public partial class WelcomeSettingsViewModel : BaseViewModel
     private PersonaOption? _selectedPersonaOption;
 
     [ObservableProperty]
+    private bool _showBotPromptTranslation = true;
+
+    public string ShowBotPromptTranslationLabel => AppStrings.ShowBotPromptTranslationLabel;
+    public string ShowBotPromptTranslationHint => AppStrings.ShowBotPromptTranslationHint;
+
+    [ObservableProperty]
     private string _statusMessage = string.Empty;
 
     public WelcomeSettingsViewModel(ISettingsService settingsService, IDatabaseService databaseService)
@@ -86,6 +92,8 @@ public partial class WelcomeSettingsViewModel : BaseViewModel
             var defaultPersona = _settingsService.GetDefaultPersona();
             SelectedPersonaOption = AvailablePersonas.FirstOrDefault(p => p.Type == defaultPersona)
                                     ?? AvailablePersonas[0];
+
+            ShowBotPromptTranslation = _settingsService.GetShowBotPromptTranslation();
         }
         catch (Exception ex)
         {
@@ -110,6 +118,8 @@ public partial class WelcomeSettingsViewModel : BaseViewModel
 
         if (SelectedPersonaOption != null)
             _settingsService.SetDefaultPersona(SelectedPersonaOption.Type);
+
+        _settingsService.SetShowBotPromptTranslation(ShowBotPromptTranslation);
     }
 
     [RelayCommand]

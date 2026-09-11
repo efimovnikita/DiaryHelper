@@ -10,6 +10,7 @@ public class SettingsService : ISettingsService
     private const string SourceLanguageSetting = "source_language";
     private const string TargetLanguageSetting = "target_language";
     private const string DefaultPersonaSetting = "default_persona";
+    private const string ShowBotPromptTranslationSetting = "show_bot_prompt_translation";
 
     public async Task<string?> GetMistralApiKeyAsync()
     {
@@ -115,6 +116,16 @@ public class SettingsService : ISettingsService
     public void SetDefaultPersona(PersonaType persona)
     {
         Preferences.Default.Set(DefaultPersonaSetting, persona.ToString());
+    }
+
+    public bool GetShowBotPromptTranslation()
+    {
+        return Preferences.Default.Get(ShowBotPromptTranslationSetting, true);
+    }
+
+    public void SetShowBotPromptTranslation(bool show)
+    {
+        Preferences.Default.Set(ShowBotPromptTranslationSetting, show);
     }
 
     public async Task<bool> HasRequiredKeysAsync()

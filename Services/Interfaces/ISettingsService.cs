@@ -19,5 +19,8 @@ public interface ISettingsService
     PersonaType GetDefaultPersona();
     void SetDefaultPersona(PersonaType persona);
 
+    bool GetShowBotPromptTranslation();
+    void SetShowBotPromptTranslation(bool show);
+
     Task<bool> HasRequiredKeysAsync();
 }

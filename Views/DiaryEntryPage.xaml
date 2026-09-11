@@ -163,44 +163,125 @@
                         <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="4">
                             <Label Text="{Binding KickQuestionHeader}" FontSize="11" FontAttributes="Bold" TextColor="#6366F1" />
                             <Label Text="{Binding CurrentPromptQuestion}" FontSize="15" FontAttributes="Bold" TextColor="#312E81" />
-                            <Label Text="{Binding CurrentPromptQuestionTranslation}" FontSize="13" FontAttributes="Italic" TextColor="#4F46E5" />
+                            <Label Text="{Binding CurrentPromptQuestionTranslation}" 
+                                   IsVisible="{Binding HasPromptTranslationAndEnabled}"
+                                   FontSize="13" FontAttributes="Italic" TextColor="#4F46E5" />
                         </VerticalStackLayout>
                         <HorizontalStackLayout Grid.Row="0" Grid.Column="1" Spacing="4" VerticalOptions="Start">
+                            <Button Text="🌐" Command="{Binding TogglePromptTranslationCommand}" BackgroundColor="Transparent" TextColor="#4F46E5" Padding="4" HeightRequest="32" WidthRequest="32" />
                             <Button Text="🔄" Command="{Binding RequestKickQuestionCommand}" BackgroundColor="Transparent" TextColor="#4F46E5" Padding="4" HeightRequest="32" WidthRequest="32" />
                             <Button Text="✕" Command="{Binding DismissPromptCommand}" BackgroundColor="Transparent" TextColor="#94A3B8" Padding="4" HeightRequest="32" WidthRequest="32" />
                         </HorizontalStackLayout>
                     </Grid>
                 </Border>
 
-                <!-- Grammar Checking Feedback Panel -->
-                <Border IsVisible="{Binding HasPendingAnalysis}"
-                        BackgroundColor="{Binding AnalysisCardBackground}"
-                        Stroke="{Binding AnalysisCardStroke}"
-                        StrokeThickness="1"
+                <!-- 1. Formally Correct Sentence Card (Green / Mint) -->
+                <Border IsVisible="{Binding IsAnalysisCorrect}"
+                        BackgroundColor="#F0FDF4"
+                        Stroke="#10B981"
+                        StrokeThickness="1.5"
                         StrokeShape="RoundRectangle 14"
-                        Padding="12,10">
-                    <VerticalStackLayout Spacing="6">
+                        Padding="14,12">
+                    <VerticalStackLayout Spacing="8">
                         <Grid ColumnDefinitions="*, Auto">
-                            <Label Text="{Binding AnalysisHeader}" FontSize="12" FontAttributes="Bold" TextColor="{Binding AnalysisHeaderColor}" VerticalOptions="Center" />
+                            <!-- Green Badge Pill -->
+                            <Border Grid.Column="0" 
+                                    HorizontalOptions="Start"
+                                    BackgroundColor="#DCFCE7" 
+                                    Stroke="#86EFAC" 
+                                    StrokeThickness="1" 
+                                    StrokeShape="RoundRectangle 8" 
+                                    Padding="8,3">
+                                <Label Text="{Binding CorrectBadgeText}" 
+                                       FontSize="11" 
+                                       FontAttributes="Bold" 
+                                       TextColor="#166534" />
+                            </Border>
+
                             <HorizontalStackLayout Grid.Column="1" Spacing="6">
-                                <Button Text="{Binding ApplyFixButton}" 
-                                        IsVisible="{Binding PendingAnalysis.HasCorrections}"
-                                        Command="{Binding ApplyFixCommand}" 
-                                        BackgroundColor="#C2410C" TextColor="White" 
-                                        CornerRadius="8" HeightRequest="28" Padding="8,2" FontSize="11" />
                                 <Button Text="{Binding AddButton}" 
-                                        IsVisible="{Binding IsAnalysisCorrect}"
                                         Command="{Binding ConfirmSentenceCommand}" 
-                                        BackgroundColor="#15803D" TextColor="White" 
-                                        CornerRadius="8" HeightRequest="28" Padding="8,2" FontSize="11" />
-                                <Button Text="✕" Command="{Binding DismissAnalysisCommand}" 
-                                        BackgroundColor="Transparent" TextColor="#94A3B8" 
-                                        HeightRequest="28" WidthRequest="28" Padding="0" />
+                                        BackgroundColor="#10B981" 
+                                        TextColor="White" 
+                                        FontAttributes="Bold"
+                                        CornerRadius="8" 
+                                        HeightRequest="30" 
+                                        Padding="10,2" 
+                                        FontSize="12" />
+                                <Button Text="✕" 
+                                        Command="{Binding DismissAnalysisCommand}" 
+                                        BackgroundColor="Transparent" 
+                                        TextColor="#6B7280" 
+                                        HeightRequest="30" 
+                                        WidthRequest="30" 
+                                        Padding="0" />
                             </HorizontalStackLayout>
                         </Grid>
 
+                        <!-- Full sentence displayed cleanly -->
+                        <Label Text="{Binding PendingAnalysis.Original}" 
+                               FontSize="15" 
+                               TextColor="#0F172A" />
+
+                        <!-- Translation in soft emerald -->
+                        <Label Text="{Binding PendingAnalysis.Translation}" 
+                               FontSize="13" 
+                               FontAttributes="Italic" 
+                               TextColor="#047857" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- 2. Corrections Needed Card (Warm Amber / Orange) -->
+                <Border IsVisible="{Binding HasAnalysisCorrections}"
+                        BackgroundColor="#FFFBEB"
+                        Stroke="#F59E0B"
+                        StrokeThickness="1.5"
+                        StrokeShape="RoundRectangle 14"
+                        Padding="14,12">
+                    <VerticalStackLayout Spacing="8">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <!-- Amber Badge Pill -->
+                            <Border Grid.Column="0" 
+                                    HorizontalOptions="Start"
+                                    BackgroundColor="#FEF3C7" 
+                                    Stroke="#FCD34D" 
+                                    StrokeThickness="1" 
+                                    StrokeShape="RoundRectangle 8" 
+                                    Padding="8,3">
+                                <Label Text="{Binding FixesBadgeText}" 
+                                       FontSize="11" 
+                                       FontAttributes="Bold" 
+                                       TextColor="#92400E" />
+                            </Border>
+
+                            <HorizontalStackLayout Grid.Column="1" Spacing="6">
+                                <Button Text="{Binding ApplyFixButton}" 
+                                        Command="{Binding ApplyFixCommand}" 
+                                        BackgroundColor="#D97706" 
+                                        TextColor="White" 
+                                        FontAttributes="Bold"
+                                        CornerRadius="8" 
+                                        HeightRequest="30" 
+                                        Padding="10,2" 
+                                        FontSize="12" />
+                                <Button Text="✕" 
+                                        Command="{Binding DismissAnalysisCommand}" 
+                                        BackgroundColor="Transparent" 
+                                        TextColor="#6B7280" 
+                                        HeightRequest="30" 
+                                        WidthRequest="30" 
+                                        Padding="0" />
+                            </HorizontalStackLayout>
+                        </Grid>
+
+                        <!-- Highlighted word segments -->
                         <controls:SegmentedLabel Segments="{Binding PendingAnalysis.Segments}" FontSize="15" />
-                        <Label Text="{Binding PendingAnalysis.Translation}" FontSize="13" FontAttributes="Italic" TextColor="{Binding AnalysisTranslationColor}" />
+
+                        <!-- Translation in warm amber-brown -->
+                        <Label Text="{Binding PendingAnalysis.Translation}" 
+                               FontSize="13" 
+                               FontAttributes="Italic" 
+                               TextColor="#78350F" />
                     </VerticalStackLayout>
                 </Border>
 
