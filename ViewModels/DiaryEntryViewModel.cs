@@ -21,6 +21,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
     private string _entryId = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WordCountStats))]
     private string _currentInput = string.Empty;
 
     [ObservableProperty]
@@ -108,6 +109,34 @@ public partial class DiaryEntryViewModel : BaseViewModel
     public string PersonaSageText => AppStrings.PersonaSage;
     public string PersonaSparkText => AppStrings.PersonaSpark;
 
+    public string WordCountStats
+    {
+        get
+        {
+            var sentWords = Sentences.Sum(s => DiaryEntry.CountWords(s.Text));
+            var inputWords = DiaryEntry.CountWords(CurrentInput);
+            var sentCount = Sentences.Count;
+
+            if (inputWords > 0 && sentCount > 0)
+            {
+                var baseWords = AppStrings.FormatWordCount(sentWords);
+                var sents = AppStrings.FormatSentenceCount(sentCount);
+                return $"📊 {baseWords} (+{inputWords}) • {sents}";
+            }
+            else if (inputWords > 0 && sentCount == 0)
+            {
+                var inputWordsFormatted = AppStrings.FormatWordCount(inputWords);
+                return $"📊 {inputWordsFormatted} ({AppStrings.DraftLabel})";
+            }
+            else
+            {
+                var words = AppStrings.FormatWordCount(sentWords);
+                var sents = AppStrings.FormatSentenceCount(sentCount);
+                return $"📊 {words} • {sents}";
+            }
+        }
+    }
+
     public DiaryEntryViewModel(
         IDatabaseService databaseService,
         ISettingsService settingsService,
@@ -119,6 +148,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
         _mistralService = mistralService;
         _translateService = translateService;
         Title = AppStrings.NewEntryTitle;
+        Sentences.CollectionChanged += (s, e) => OnPropertyChanged(nameof(WordCountStats));
     }
 
     public async Task InitializeAsync()
@@ -142,6 +172,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
                 {
                     Sentences.Add(s);
                 }
+                OnPropertyChanged(nameof(WordCountStats));
                 return;
             }
         }
@@ -154,6 +185,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
             DefaultPersona = ActivePersona.ToString()
         };
         Sentences.Clear();
+        OnPropertyChanged(nameof(WordCountStats));
     }
 
     [RelayCommand]
@@ -272,6 +304,8 @@ public partial class DiaryEntryViewModel : BaseViewModel
                 _ = TryGenerateTitleAsync();
             }
         }
+
+        _ = AutoSaveToDatabaseAsync();
 
         CurrentInput = string.Empty;
         PendingAnalysis = null;
@@ -401,6 +435,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
         if (idx > 0)
         {
             Sentences.Move(idx, idx - 1);
+            _ = AutoSaveToDatabaseAsync();
         }
     }
 
@@ -411,6 +446,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
         if (idx < Sentences.Count - 1)
         {
             Sentences.Move(idx, idx + 1);
+            _ = AutoSaveToDatabaseAsync();
         }
     }
 
@@ -434,6 +470,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
             CurrentInput = string.Empty;
         }
         Sentences.Remove(sentence);
+        _ = AutoSaveToDatabaseAsync();
     }
 
     [RelayCommand]
@@ -453,6 +490,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
         }
 
         _entry.SentenceCount = Sentences.Count;
+        _entry.WordCount = Sentences.Sum(s => DiaryEntry.CountWords(s.Text));
         _entry.PreviewText = Sentences.FirstOrDefault()?.Text ?? string.Empty;
         _entry.UpdatedAt = DateTime.UtcNow;
 
@@ -463,6 +501,32 @@ public partial class DiaryEntryViewModel : BaseViewModel
         {
             await Shell.Current.DisplayAlertAsync(AppStrings.SavedSuccessTitle, AppStrings.SavedSuccessMessage, AppStrings.Ok);
             await GoBackAsync();
+        }
+    }
+
+    private async Task AutoSaveToDatabaseAsync()
+    {
+        try
+        {
+            if (Sentences.Count > 0)
+            {
+                for (int i = 0; i < Sentences.Count; i++)
+                {
+                    Sentences[i].OrderIndex = i;
+                }
+
+                _entry.SentenceCount = Sentences.Count;
+                _entry.WordCount = Sentences.Sum(s => DiaryEntry.CountWords(s.Text));
+                _entry.PreviewText = Sentences.FirstOrDefault()?.Text ?? string.Empty;
+                _entry.UpdatedAt = DateTime.UtcNow;
+
+                await _databaseService.SaveEntryAsync(_entry);
+                await _databaseService.SaveSentencesAsync(_entry.Id, Sentences);
+            }
+        }
+        catch
+        {
+            // best-effort background auto-save
         }
     }
 
@@ -498,6 +562,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
         if (Sentences.Count > 0)
         {
             _entry.SentenceCount = Sentences.Count;
+            _entry.WordCount = Sentences.Sum(s => DiaryEntry.CountWords(s.Text));
             _entry.PreviewText = Sentences.FirstOrDefault()?.Text ?? string.Empty;
             _entry.UpdatedAt = DateTime.UtcNow;
 

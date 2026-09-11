@@ -89,4 +89,39 @@ public static class AppStrings
     public static string DeleteConfirmMessage => IsRussian ? "Удалить эту запись из истории безвозвратно?" : "Delete this entry permanently?";
     public static string SentencesCountSuffix => IsRussian ? "предл." : "sent.";
     public static string LanguagePrefix => IsRussian ? "Язык: {0}" : "Lang: {0}";
+    public static string DraftLabel => IsRussian ? "черновик" : "draft";
+
+    public static string FormatWordCount(int count)
+    {
+        if (!IsRussian)
+            return count == 1 ? "1 word" : $"{count} words";
+
+        var mod100 = count % 100;
+        var mod10 = count % 10;
+
+        if (mod100 >= 11 && mod100 <= 19)
+            return $"{count} слов";
+        if (mod10 == 1)
+            return $"{count} слово";
+        if (mod10 >= 2 && mod10 <= 4)
+            return $"{count} слова";
+        return $"{count} слов";
+    }
+
+    public static string FormatSentenceCount(int count)
+    {
+        if (!IsRussian)
+            return count == 1 ? "1 sentence" : $"{count} sentences";
+
+        var mod100 = count % 100;
+        var mod10 = count % 10;
+
+        if (mod100 >= 11 && mod100 <= 19)
+            return $"{count} предложений";
+        if (mod10 == 1)
+            return $"{count} предложение";
+        if (mod10 >= 2 && mod10 <= 4)
+            return $"{count} предложения";
+        return $"{count} предложений";
+    }
 }

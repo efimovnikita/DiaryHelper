@@ -20,6 +20,7 @@ public class DiaryEntry
     public string DefaultPersona { get; set; } = "Friend";
 
     public int SentenceCount { get; set; }
+    public int WordCount { get; set; }
 
     public string Title { get; set; } = string.Empty;
 
@@ -29,6 +30,37 @@ public class DiaryEntry
     public string DisplayTitle => !string.IsNullOrWhiteSpace(Title)
         ? Title
         : $"{CreatedAt.ToLocalTime():dd MMMM yyyy, HH:mm}";
+
+    public static int CountWords(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return 0;
+
+        var count = 0;
+        var inWord = false;
+
+        foreach (char c in text)
+        {
+            if (char.IsLetterOrDigit(c))
+            {
+                if (!inWord)
+                {
+                    inWord = true;
+                    count++;
+                }
+            }
+            else if (c == '\'' || c == '’' || c == '-')
+            {
+                // Internal apostrophes and hyphens inside words
+            }
+            else
+            {
+                inWord = false;
+            }
+        }
+
+        return count;
+    }
 
     public string ToPureText(IEnumerable<DiarySentence> sentences)
     {

@@ -13,34 +13,24 @@
         <BackButtonBehavior Command="{Binding GoBackCommand}" IsEnabled="True" IsVisible="True" />
     </Shell.BackButtonBehavior>
 
-    <Grid RowDefinitions="Auto, *, Auto">
-        
-        <!-- Top Navigation / Title Bar -->
-        <Border Grid.Row="0" BackgroundColor="White" Stroke="#E2E8F0" StrokeThickness="1" Padding="12,8" Margin="12,8,12,0" StrokeShape="RoundRectangle 12">
-            <Grid ColumnDefinitions="Auto, *">
-                <Button Grid.Column="0"
-                        Text="←"
-                        Command="{Binding GoBackCommand}"
-                        BackgroundColor="#F1F5F9"
-                        TextColor="#334155"
-                        FontAttributes="Bold"
-                        CornerRadius="8"
-                        HeightRequest="36"
-                        WidthRequest="38"
-                        Padding="0" />
-                <Label Grid.Column="1"
-                       Text="{Binding Title}"
-                       FontSize="15"
-                       FontAttributes="Bold"
-                       TextColor="#0F172A"
-                       VerticalOptions="Center"
-                       Margin="10,0,0,0"
-                       LineBreakMode="TailTruncation" />
-            </Grid>
-        </Border>
+    <Shell.TitleView>
+        <VerticalStackLayout VerticalOptions="Center" Spacing="0">
+            <Label Text="{Binding Title}"
+                   FontSize="16"
+                   FontAttributes="Bold"
+                   TextColor="#0F172A"
+                   LineBreakMode="TailTruncation" />
+            <Label Text="{Binding WordCountStats}"
+                   FontSize="11"
+                   TextColor="#64748B"
+                   LineBreakMode="NoWrap" />
+        </VerticalStackLayout>
+    </Shell.TitleView>
+
+    <Grid RowDefinitions="*, Auto">
         
         <!-- Sentences History List -->
-        <CollectionView Grid.Row="1" 
+        <CollectionView Grid.Row="0" 
                         ItemsSource="{Binding Sentences}"
                         EmptyView="{Binding EmptySentencesHint}"
                         Margin="12,8,12,6">
@@ -127,7 +117,7 @@
         </CollectionView>
 
         <!-- Bottom Input & AI Assistant Area -->
-        <Border Grid.Row="2" Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="14" StrokeShape="RoundRectangle 20,20,0,0">
+        <Border Grid.Row="1" Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="14" StrokeShape="RoundRectangle 20,20,0,0">
             <VerticalStackLayout Spacing="10">
 
                 <!-- Active Persona Quick Switcher Chips (Scrollable so never clipped) -->
@@ -294,18 +284,8 @@
                         AutoSize="Disabled" />
 
                 <!-- Action Toolbar -->
-                <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="8">
+                <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
                     <Button Grid.Column="0"
-                            Text="{Binding SaveButton}"
-                            Command="{Binding SaveEntryCommand}"
-                            BackgroundColor="#0F172A"
-                            TextColor="White"
-                            FontAttributes="Bold"
-                            CornerRadius="10"
-                            HeightRequest="42"
-                            FontSize="13" />
-
-                    <Button Grid.Column="1"
                             Text="{Binding CheckButton}"
                             Command="{Binding CheckSentenceCommand}"
                             BackgroundColor="#F1F5F9"
@@ -315,7 +295,7 @@
                             HeightRequest="42"
                             FontSize="13" />
 
-                    <Button Grid.Column="2"
+                    <Button Grid.Column="1"
                             Text="{Binding AddButton}"
                             Command="{Binding ConfirmSentenceCommand}"
                             BackgroundColor="#4F46E5"
