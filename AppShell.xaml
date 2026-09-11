@@ -3,12 +3,12 @@
     x:Class="DiaryHelper.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:local="clr-namespace:DiaryHelper"
+    xmlns:views="clr-namespace:DiaryHelper.Views"
     Title="DiaryHelper">
 
     <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+        Title="Главная"
+        ContentTemplate="{DataTemplate views:WelcomeSettingsPage}"
+        Route="WelcomeSettingsPage" />
 
 </Shell>

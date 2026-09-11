@@ -1,0 +1,359 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using DiaryHelper.Models;
+using DiaryHelper.Services.Interfaces;
+using System.Collections.ObjectModel;
+
+namespace DiaryHelper.ViewModels;
+
+[QueryProperty(nameof(EntryId), "id")]
+public partial class DiaryEntryViewModel : BaseViewModel
+{
+    private readonly IDatabaseService _databaseService;
+    private readonly ISettingsService _settingsService;
+    private readonly IMistralService _mistralService;
+    private readonly ITranslateService _translateService;
+
+    private DiaryEntry _entry = new();
+    private DiarySentence? _editingSentence;
+
+    [ObservableProperty]
+    private string _entryId = string.Empty;
+
+    [ObservableProperty]
+    private string _currentInput = string.Empty;
+
+    [ObservableProperty]
+    private SentenceAnalysis? _pendingAnalysis;
+
+    [ObservableProperty]
+    private bool _isChecking;
+
+    [ObservableProperty]
+    private bool _isGeneratingPrompt;
+
+    [ObservableProperty]
+    private string? _currentPromptQuestion;
+
+    [ObservableProperty]
+    private string? _currentPromptQuestionTranslation;
+
+    [ObservableProperty]
+    private PersonaType _activePersona = PersonaType.Friend;
+
+    [ObservableProperty]
+    private bool _isEditingExisting;
+
+    public IReadOnlyList<PersonaType> AvailablePersonas { get; } = Enum.GetValues<PersonaType>();
+
+    public ObservableCollection<DiarySentence> Sentences { get; } = new();
+
+    public bool HasPendingAnalysis => PendingAnalysis != null;
+    public bool HasActivePrompt => !string.IsNullOrWhiteSpace(CurrentPromptQuestion);
+
+    public DiaryEntryViewModel(
+        IDatabaseService databaseService,
+        ISettingsService settingsService,
+        IMistralService mistralService,
+        ITranslateService translateService)
+    {
+        _databaseService = databaseService;
+        _settingsService = settingsService;
+        _mistralService = mistralService;
+        _translateService = translateService;
+        Title = "Новая запись";
+    }
+
+    public async Task InitializeAsync()
+    {
+        ActivePersona = _settingsService.GetDefaultPersona();
+
+        if (!string.IsNullOrWhiteSpace(EntryId))
+        {
+            var loaded = await _databaseService.GetEntryAsync(EntryId);
+            if (loaded != null)
+            {
+                _entry = loaded;
+                Title = $"Запись от {_entry.CreatedAt.ToLocalTime():dd.MM.yyyy HH:mm}";
+
+                var sentences = await _databaseService.GetSentencesAsync(EntryId);
+                Sentences.Clear();
+                foreach (var s in sentences)
+                {
+                    Sentences.Add(s);
+                }
+                return;
+            }
+        }
+
+        // New entry initialization
+        _entry = new DiaryEntry
+        {
+            SourceLanguage = _settingsService.GetSourceLanguage(),
+            TargetLanguage = _settingsService.GetTargetLanguage(),
+            DefaultPersona = ActivePersona.ToString()
+        };
+        Sentences.Clear();
+    }
+
+    [RelayCommand]
+    public async Task CheckSentenceAsync()
+    {
+        var text = CurrentInput.Trim();
+        if (string.IsNullOrWhiteSpace(text) || IsChecking) return;
+
+        IsChecking = true;
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+            var analysisTask = _mistralService.AnalyzeSentenceAsync(text, _entry.SourceLanguage, cts.Token);
+            var translateTask = _translateService.TranslateTextAsync(text, _entry.SourceLanguage, _entry.TargetLanguage, cts.Token);
+
+            await Task.WhenAll(analysisTask, translateTask);
+
+            var analysis = await analysisTask;
+            var translation = await translateTask;
+
+            analysis.Translation = translation;
+            PendingAnalysis = analysis;
+            OnPropertyChanged(nameof(HasPendingAnalysis));
+        }
+        catch (OperationCanceledException)
+        {
+            if (Shell.Current != null)
+                await Shell.Current.DisplayAlertAsync("Таймаут", "Проверка заняла больше 10 секунд. Пожалуйста, попробуйте снова.", "OK");
+        }
+        catch (Exception ex)
+        {
+            if (Shell.Current != null)
+                await Shell.Current.DisplayAlertAsync("Ошибка", $"Сбой при проверке: {ex.Message}", "OK");
+        }
+        finally
+        {
+            IsChecking = false;
+        }
+    }
+
+    [RelayCommand]
+    public void ApplyFix()
+    {
+        if (PendingAnalysis != null)
+        {
+            CurrentInput = PendingAnalysis.CorrectedFullText;
+            PendingAnalysis = null;
+            OnPropertyChanged(nameof(HasPendingAnalysis));
+        }
+    }
+
+    [RelayCommand]
+    public void DismissAnalysis()
+    {
+        PendingAnalysis = null;
+        OnPropertyChanged(nameof(HasPendingAnalysis));
+    }
+
+    [RelayCommand]
+    public void ConfirmSentence()
+    {
+        var text = CurrentInput.Trim();
+        if (string.IsNullOrWhiteSpace(text)) return;
+
+        if (_editingSentence != null)
+        {
+            _editingSentence.Text = text;
+            _editingSentence.Segments = PendingAnalysis?.Original == text 
+                ? PendingAnalysis.Segments 
+                : new List<TextSegment> { new() { Text = text, IsCorrection = false } };
+            _editingSentence.TranslationText = PendingAnalysis?.Original == text ? PendingAnalysis.Translation : null;
+
+            var index = Sentences.IndexOf(_editingSentence);
+            if (index >= 0)
+            {
+                Sentences[index] = _editingSentence;
+            }
+
+            _editingSentence = null;
+            IsEditingExisting = false;
+        }
+        else
+        {
+            var sentence = new DiarySentence
+            {
+                EntryId = _entry.Id,
+                OrderIndex = Sentences.Count,
+                Text = text,
+                PromptQuestion = CurrentPromptQuestion,
+                PromptQuestionTranslation = CurrentPromptQuestionTranslation,
+                PromptPersona = ActivePersona.ToString(),
+                Segments = (PendingAnalysis != null && PendingAnalysis.Original == text) 
+                    ? PendingAnalysis.Segments 
+                    : new List<TextSegment> { new() { Text = text, IsCorrection = false } },
+                TranslationText = (PendingAnalysis != null && PendingAnalysis.Original == text) 
+                    ? PendingAnalysis.Translation 
+                    : null
+            };
+
+            Sentences.Add(sentence);
+        }
+
+        CurrentInput = string.Empty;
+        PendingAnalysis = null;
+        CurrentPromptQuestion = null;
+        CurrentPromptQuestionTranslation = null;
+
+        OnPropertyChanged(nameof(HasPendingAnalysis));
+        OnPropertyChanged(nameof(HasActivePrompt));
+    }
+
+    [RelayCommand]
+    public async Task RequestKickQuestionAsync()
+    {
+        if (IsGeneratingPrompt) return;
+
+        IsGeneratingPrompt = true;
+        try
+        {
+            var contextText = string.Join(" ", Sentences.Select(s => s.Text));
+            if (!string.IsNullOrWhiteSpace(CurrentInput))
+            {
+                contextText += " " + CurrentInput.Trim();
+            }
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(12));
+
+            var question = await _mistralService.GenerateKickQuestionAsync(
+                diaryContext: string.IsNullOrWhiteSpace(contextText) ? "I am starting to write my diary entry today." : contextText,
+                sourceLanguage: _entry.SourceLanguage,
+                persona: ActivePersona,
+                cancellationToken: cts.Token
+            );
+
+            if (!string.IsNullOrWhiteSpace(question))
+            {
+                CurrentPromptQuestion = question;
+
+                var translation = await _translateService.TranslateTextAsync(
+                    question, 
+                    _entry.SourceLanguage, 
+                    _entry.TargetLanguage, 
+                    cts.Token
+                );
+
+                CurrentPromptQuestionTranslation = translation;
+                OnPropertyChanged(nameof(HasActivePrompt));
+            }
+        }
+        catch (Exception ex)
+        {
+            if (Shell.Current != null)
+                await Shell.Current.DisplayAlertAsync("Подсказка AI", $"Не удалось получить вопрос: {ex.Message}", "OK");
+        }
+        finally
+        {
+            IsGeneratingPrompt = false;
+        }
+    }
+
+    [RelayCommand]
+    public void DismissPrompt()
+    {
+        CurrentPromptQuestion = null;
+        CurrentPromptQuestionTranslation = null;
+        OnPropertyChanged(nameof(HasActivePrompt));
+    }
+
+    [RelayCommand]
+    public void MoveUp(DiarySentence sentence)
+    {
+        var idx = Sentences.IndexOf(sentence);
+        if (idx > 0)
+        {
+            Sentences.Move(idx, idx - 1);
+        }
+    }
+
+    [RelayCommand]
+    public void MoveDown(DiarySentence sentence)
+    {
+        var idx = Sentences.IndexOf(sentence);
+        if (idx < Sentences.Count - 1)
+        {
+            Sentences.Move(idx, idx + 1);
+        }
+    }
+
+    [RelayCommand]
+    public void EditSentence(DiarySentence sentence)
+    {
+        _editingSentence = sentence;
+        IsEditingExisting = true;
+        CurrentInput = sentence.Text;
+        PendingAnalysis = null;
+        OnPropertyChanged(nameof(HasPendingAnalysis));
+    }
+
+    [RelayCommand]
+    public void DeleteSentence(DiarySentence sentence)
+    {
+        if (_editingSentence == sentence)
+        {
+            _editingSentence = null;
+            IsEditingExisting = false;
+            CurrentInput = string.Empty;
+        }
+        Sentences.Remove(sentence);
+    }
+
+    [RelayCommand]
+    public async Task SaveEntryAsync()
+    {
+        if (Sentences.Count == 0 && string.IsNullOrWhiteSpace(CurrentInput))
+        {
+            if (Shell.Current != null)
+                await Shell.Current.DisplayAlertAsync("Внимание", "Запись пуста. Напишите хотя бы одно предложение.", "OK");
+            return;
+        }
+
+        // Add unfinished input if present
+        if (!string.IsNullOrWhiteSpace(CurrentInput))
+        {
+            ConfirmSentence();
+        }
+
+        _entry.SentenceCount = Sentences.Count;
+        _entry.PreviewText = Sentences.FirstOrDefault()?.Text ?? string.Empty;
+        _entry.UpdatedAt = DateTime.UtcNow;
+
+        await _databaseService.SaveEntryAsync(_entry);
+        await _databaseService.SaveSentencesAsync(_entry.Id, Sentences);
+
+        if (Shell.Current != null)
+        {
+            await Shell.Current.DisplayAlertAsync("Сохранено", "Запись дневника успешно сохранена в локальной базе данных!", "OK");
+            await Shell.Current.GoToAsync("..");
+        }
+    }
+
+    [RelayCommand]
+    public async Task CopyPureTextAsync()
+    {
+        var text = _entry.ToPureText(Sentences);
+        if (string.IsNullOrWhiteSpace(text)) return;
+
+        await Clipboard.Default.SetTextAsync(text);
+        if (Shell.Current != null)
+            await Shell.Current.DisplayAlertAsync("Буфер обмена", "Текст дневника скопирован без вопросов бота!", "OK");
+    }
+
+    [RelayCommand]
+    public async Task CopyGuidedDialogueAsync()
+    {
+        var text = _entry.ToGuidedDialogueText(Sentences);
+        if (string.IsNullOrWhiteSpace(text)) return;
+
+        await Clipboard.Default.SetTextAsync(text);
+        if (Shell.Current != null)
+            await Shell.Current.DisplayAlertAsync("Буфер обмена", "Текст дневника вместе с вопросами AI скопирован!", "OK");
+    }
+}
