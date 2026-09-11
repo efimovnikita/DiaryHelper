@@ -39,10 +39,43 @@ public partial class WelcomeSettingsViewModel : BaseViewModel
     public string SaveSettingsButton => AppStrings.SaveSettingsButton;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasApiKeys))]
+    [NotifyPropertyChangedFor(nameof(ApiKeysStatusSubtitle))]
     private string _mistralApiKey = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasApiKeys))]
+    [NotifyPropertyChangedFor(nameof(ApiKeysStatusSubtitle))]
     private string _googleTranslateApiKey = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ApiKeysChevronText))]
+    [NotifyPropertyChangedFor(nameof(ApiKeysStatusSubtitle))]
+    private bool _isApiKeysExpanded = true;
+
+    public bool HasApiKeys => !string.IsNullOrWhiteSpace(MistralApiKey) || !string.IsNullOrWhiteSpace(GoogleTranslateApiKey);
+    public string ApiKeysChevronText => IsApiKeysExpanded ? "▲" : "▼";
+    public string ApiKeysConfiguredText => AppStrings.ApiKeysConfiguredBadge;
+
+    public string ApiKeysStatusSubtitle
+    {
+        get
+        {
+            if (HasApiKeys)
+            {
+                return IsApiKeysExpanded 
+                    ? AppStrings.ApiKeysCollapseHint 
+                    : AppStrings.ApiKeysExpandHint;
+            }
+            return AppStrings.ApiKeysNotConfiguredHint;
+        }
+    }
+
+    [RelayCommand]
+    public void ToggleApiKeysExpanded()
+    {
+        IsApiKeysExpanded = !IsApiKeysExpanded;
+    }
 
     [ObservableProperty]
     private LanguageOption? _selectedSourceLanguage;
@@ -79,6 +112,11 @@ public partial class WelcomeSettingsViewModel : BaseViewModel
             MistralApiKey = await _settingsService.GetMistralApiKeyAsync() ?? string.Empty;
             GoogleTranslateApiKey = await _settingsService.GetGoogleTranslateApiKeyAsync() ?? string.Empty;
 
+            // If keys are already configured, start with section collapsed
+            IsApiKeysExpanded = !HasApiKeys;
+            OnPropertyChanged(nameof(HasApiKeys));
+            OnPropertyChanged(nameof(ApiKeysStatusSubtitle));
+
             var defaultSrc = SettingsService.GetSystemDefaultSourceLanguage();
             var srcCode = _settingsService.GetSourceLanguage();
             SelectedSourceLanguage = SupportedLanguages.FirstOrDefault(l => l.Code == srcCode) 
@@ -109,6 +147,14 @@ public partial class WelcomeSettingsViewModel : BaseViewModel
     {
         await _settingsService.SetMistralApiKeyAsync(MistralApiKey);
         await _settingsService.SetGoogleTranslateApiKeyAsync(GoogleTranslateApiKey);
+
+        if (HasApiKeys)
+        {
+            IsApiKeysExpanded = false;
+        }
+
+        OnPropertyChanged(nameof(HasApiKeys));
+        OnPropertyChanged(nameof(ApiKeysStatusSubtitle));
 
         if (SelectedSourceLanguage != null)
             _settingsService.SetSourceLanguage(SelectedSourceLanguage.Code);

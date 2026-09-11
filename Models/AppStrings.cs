@@ -19,6 +19,10 @@ public static class AppStrings
         : "Personal language practice diary with an AI companion";
 
     public static string ApiKeysSectionTitle => IsRussian ? "🔑 Облачные сервисы (API Keys)" : "🔑 Cloud Services (API Keys)";
+    public static string ApiKeysConfiguredBadge => IsRussian ? "✅ Настроены" : "✅ Configured";
+    public static string ApiKeysExpandHint => IsRussian ? "Нажмите, чтобы настроить ключи" : "Tap to view or change keys";
+    public static string ApiKeysCollapseHint => IsRussian ? "Нажмите, чтобы скрыть" : "Tap to collapse";
+    public static string ApiKeysNotConfiguredHint => IsRussian ? "Необходимо указать API-ключи" : "API keys required";
     public static string MistralKeyLabel => "Mistral AI API Key";
     public static string MistralKeyPlaceholder => IsRussian ? "Вставьте ключ Mistral API..." : "Paste Mistral API key...";
     public static string MistralKeyHint => IsRussian ? "Используется для проверки грамматики и наводящих вопросов" : "Used for grammar check and kick questions";

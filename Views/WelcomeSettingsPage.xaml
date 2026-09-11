@@ -20,30 +20,74 @@
                 </VerticalStackLayout>
             </Border>
 
-            <!-- API Keys Section -->
-            <Border Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="20" StrokeShape="RoundRectangle 20">
-                <VerticalStackLayout Spacing="16">
-                    <Label Text="{Binding ApiKeysSectionTitle}" FontSize="18" FontAttributes="Bold" TextColor="#0F172A" />
+            <!-- API Keys Section (Collapsible) -->
+            <Border Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="18" StrokeShape="RoundRectangle 20">
+                <VerticalStackLayout Spacing="14">
                     
-                    <VerticalStackLayout Spacing="6">
-                        <Label Text="{Binding MistralKeyLabel}" FontSize="13" FontAttributes="Bold" TextColor="#475569" />
-                        <Entry Text="{Binding MistralApiKey}" 
-                               IsPassword="True" 
-                               Placeholder="{Binding MistralKeyPlaceholder}" 
-                               TextColor="#1E293B"
-                               BackgroundColor="#F1F5F9" />
-                        <Label Text="{Binding MistralKeyHint}" FontSize="11" TextColor="#94A3B8" />
+                    <!-- Header with Tap Gesture to Toggle Expand/Collapse -->
+                    <Grid ColumnDefinitions="*, Auto" VerticalOptions="Center">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ToggleApiKeysExpandedCommand}" />
+                        </Grid.GestureRecognizers>
+
+                        <VerticalStackLayout Grid.Column="0" Spacing="3" VerticalOptions="Center">
+                            <Label Text="{Binding ApiKeysSectionTitle}" FontSize="17" FontAttributes="Bold" TextColor="#0F172A" />
+                            <Label Text="{Binding ApiKeysStatusSubtitle}" FontSize="12" TextColor="#64748B" />
+                        </VerticalStackLayout>
+
+                        <HorizontalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
+                            <!-- Status Pill Badge (if keys configured) -->
+                            <Border IsVisible="{Binding HasApiKeys}"
+                                    BackgroundColor="#DCFCE7"
+                                    Stroke="#86EFAC"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 8"
+                                    Padding="8,3"
+                                    VerticalOptions="Center">
+                                <Label Text="{Binding ApiKeysConfiguredText}" FontSize="11" FontAttributes="Bold" TextColor="#166534" />
+                            </Border>
+
+                            <!-- Chevron Toggle Button -->
+                            <Button Text="{Binding ApiKeysChevronText}"
+                                    Command="{Binding ToggleApiKeysExpandedCommand}"
+                                    BackgroundColor="#F1F5F9"
+                                    TextColor="#475569"
+                                    FontAttributes="Bold"
+                                    FontSize="12"
+                                    CornerRadius="8"
+                                    HeightRequest="32"
+                                    WidthRequest="32"
+                                    Padding="0" />
+                        </HorizontalStackLayout>
+                    </Grid>
+
+                    <!-- Collapsible Content (visible when IsApiKeysExpanded is true) -->
+                    <VerticalStackLayout Spacing="14" IsVisible="{Binding IsApiKeysExpanded}">
+                        
+                        <BoxView HeightRequest="1" Color="#F1F5F9" Margin="0,2,0,4" />
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="{Binding MistralKeyLabel}" FontSize="13" FontAttributes="Bold" TextColor="#475569" />
+                            <Entry Text="{Binding MistralApiKey}" 
+                                   IsPassword="True" 
+                                   Placeholder="{Binding MistralKeyPlaceholder}" 
+                                   TextColor="#1E293B"
+                                   BackgroundColor="#F1F5F9" />
+                            <Label Text="{Binding MistralKeyHint}" FontSize="11" TextColor="#94A3B8" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="{Binding GoogleKeyLabel}" FontSize="13" FontAttributes="Bold" TextColor="#475569" />
+                            <Entry Text="{Binding GoogleTranslateApiKey}" 
+                                   IsPassword="True" 
+                                   Placeholder="{Binding GoogleKeyPlaceholder}" 
+                                   TextColor="#1E293B"
+                                   BackgroundColor="#F1F5F9" />
+                            <Label Text="{Binding GoogleKeyHint}" FontSize="11" TextColor="#94A3B8" />
+                        </VerticalStackLayout>
+
                     </VerticalStackLayout>
 
-                    <VerticalStackLayout Spacing="6">
-                        <Label Text="{Binding GoogleKeyLabel}" FontSize="13" FontAttributes="Bold" TextColor="#475569" />
-                        <Entry Text="{Binding GoogleTranslateApiKey}" 
-                               IsPassword="True" 
-                               Placeholder="{Binding GoogleKeyPlaceholder}" 
-                               TextColor="#1E293B"
-                               BackgroundColor="#F1F5F9" />
-                        <Label Text="{Binding GoogleKeyHint}" FontSize="11" TextColor="#94A3B8" />
-                    </VerticalStackLayout>
                 </VerticalStackLayout>
             </Border>
 
