@@ -132,7 +132,9 @@ public partial class DiaryEntryViewModel : BaseViewModel
             if (loaded != null)
             {
                 _entry = loaded;
-                Title = $"{AppStrings.EntryFromDatePrefix} {_entry.CreatedAt.ToLocalTime():dd.MM.yyyy HH:mm}";
+                Title = !string.IsNullOrWhiteSpace(_entry.Title)
+                    ? _entry.Title
+                    : $"{AppStrings.EntryFromDatePrefix} {_entry.CreatedAt.ToLocalTime():dd.MM.yyyy HH:mm}";
 
                 var sentences = await _databaseService.GetSentencesAsync(EntryId);
                 Sentences.Clear();
@@ -263,6 +265,12 @@ public partial class DiaryEntryViewModel : BaseViewModel
             };
 
             Sentences.Add(sentence);
+
+            // After the first couple of sentences, generate a short meaningful title for the entry
+            if (Sentences.Count >= 2 && (string.IsNullOrWhiteSpace(_entry.Title) || Title == AppStrings.NewEntryTitle))
+            {
+                _ = TryGenerateTitleAsync();
+            }
         }
 
         CurrentInput = string.Empty;
@@ -272,6 +280,26 @@ public partial class DiaryEntryViewModel : BaseViewModel
 
         OnPropertyChanged(nameof(HasPendingAnalysis));
         OnPropertyChanged(nameof(HasActivePrompt));
+    }
+
+    private async Task TryGenerateTitleAsync()
+    {
+        try
+        {
+            var context = string.Join(" ", Sentences.Take(3).Select(s => s.Text));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+            var generated = await _mistralService.GenerateEntryTitleAsync(context, _entry.SourceLanguage, cts.Token);
+            if (!string.IsNullOrWhiteSpace(generated))
+            {
+                _entry.Title = generated;
+                Title = generated;
+                await _databaseService.SaveEntryAsync(_entry);
+            }
+        }
+        catch
+        {
+            // best-effort background generation
+        }
     }
 
     [RelayCommand]
@@ -438,9 +466,50 @@ public partial class DiaryEntryViewModel : BaseViewModel
         }
     }
 
+    public async Task AutoSaveOnExitAsync()
+    {
+        if (string.IsNullOrWhiteSpace(CurrentInput) && Sentences.Count == 0)
+            return;
+
+        // Auto-commit any unfinished text typed into the editor
+        if (!string.IsNullOrWhiteSpace(CurrentInput))
+        {
+            var text = CurrentInput.Trim();
+            var sentence = new DiarySentence
+            {
+                EntryId = _entry.Id,
+                OrderIndex = Sentences.Count,
+                Text = text,
+                PromptQuestion = CurrentPromptQuestion,
+                PromptQuestionTranslation = CurrentPromptQuestionTranslation,
+                PromptPersona = ActivePersona.ToString(),
+                Segments = (PendingAnalysis != null && PendingAnalysis.Original == text) 
+                    ? PendingAnalysis.Segments 
+                    : new List<TextSegment> { new() { Text = text, IsCorrection = false } },
+                TranslationText = (PendingAnalysis != null && PendingAnalysis.Original == text) 
+                    ? PendingAnalysis.Translation 
+                    : null
+            };
+            Sentences.Add(sentence);
+            CurrentInput = string.Empty;
+            PendingAnalysis = null;
+        }
+
+        if (Sentences.Count > 0)
+        {
+            _entry.SentenceCount = Sentences.Count;
+            _entry.PreviewText = Sentences.FirstOrDefault()?.Text ?? string.Empty;
+            _entry.UpdatedAt = DateTime.UtcNow;
+
+            await _databaseService.SaveEntryAsync(_entry);
+            await _databaseService.SaveSentencesAsync(_entry.Id, Sentences);
+        }
+    }
+
     [RelayCommand]
     public async Task GoBackAsync()
     {
+        await AutoSaveOnExitAsync();
         try
         {
             if (Shell.Current != null && Shell.Current.Navigation.NavigationStack.Count > 1)

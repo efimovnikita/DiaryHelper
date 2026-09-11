@@ -310,6 +310,79 @@ Return strictly JSON with this structure:
         }
     }
 
+    public async Task<string> GenerateEntryTitleAsync(string diaryContext, string language, CancellationToken cancellationToken = default)
+    {
+        var apiKey = await _settingsService.GetMistralApiKeyAsync();
+        if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(diaryContext))
+        {
+            return string.Empty;
+        }
+
+        var prompt = $@"
+You are an AI diary assistant.
+Analyze these first sentences from a personal diary written in {language}:
+""""""
+{diaryContext}
+""""""
+
+Task:
+Generate a very concise, meaningful, and engaging title for this diary entry.
+Rules:
+1. Formulate strictly in {language}.
+2. Maximum 2 to 5 words. No quotation marks, no period at the end.
+3. Capture the essence or main topic of what the writer is talking about.
+
+Return strictly JSON with this structure:
+{{
+  ""title"": ""Short Title in {language}""
+}}
+";
+
+        try
+        {
+            var requestBody = new
+            {
+                model = ModelName,
+                messages = new[]
+                {
+                    new { role = "user", content = prompt }
+                },
+                response_format = new { type = "json_object" },
+                temperature = 0.3
+            };
+
+            var request = new HttpRequestMessage(HttpMethod.Post, MistralApiUrl)
+            {
+                Content = JsonContent.Create(requestBody)
+            };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return string.Empty;
+            }
+
+            var chatResponse = await response.Content.ReadFromJsonAsync<MistralChatResponse>(cancellationToken: cancellationToken);
+            var content = chatResponse?.Choices?.FirstOrDefault()?.Message?.Content;
+
+            if (string.IsNullOrWhiteSpace(content))
+                return string.Empty;
+
+            var titleResult = JsonSerializer.Deserialize<TitleDto>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            return titleResult?.Title?.Trim(' ', '"', '.', '«', '»') ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error generating title: {ex.Message}");
+            return string.Empty;
+        }
+    }
+
     private static SentenceAnalysis CreateFallback(string sentence)
     {
         return new SentenceAnalysis
@@ -362,5 +435,11 @@ Return strictly JSON with this structure:
     {
         [JsonPropertyName("question")]
         public string? Question { get; set; }
+    }
+
+    private class TitleDto
+    {
+        [JsonPropertyName("title")]
+        public string? Title { get; set; }
     }
 }

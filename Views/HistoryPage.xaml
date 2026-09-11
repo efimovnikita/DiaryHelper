@@ -55,13 +55,15 @@
                         <VerticalStackLayout Spacing="10">
                             
                             <Grid ColumnDefinitions="*, Auto">
-                                <HorizontalStackLayout Grid.Column="0" Spacing="8">
-                                    <Label Text="📅" FontSize="16" />
-                                    <Label Text="{Binding CreatedAt, StringFormat='{0:dd MMMM yyyy, HH:mm}'}" 
+                                <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                    <Label Text="{Binding DisplayTitle}" 
                                            FontSize="15" 
                                            FontAttributes="Bold" 
                                            TextColor="#1E293B" />
-                                </HorizontalStackLayout>
+                                    <Label Text="{Binding CreatedAt, StringFormat='📅 {0:dd MMMM yyyy, HH:mm}'}" 
+                                           FontSize="12" 
+                                           TextColor="#94A3B8" />
+                                </VerticalStackLayout>
 
                                 <Border Grid.Column="1" 
                                         BackgroundColor="#F1F5F9" 

@@ -23,4 +23,10 @@ public partial class DiaryEntryPage : ContentPage
         _viewModel.GoBackCommand.Execute(null);
         return true;
     }
+
+    protected override async void OnDisappearing()
+    {
+        base.OnDisappearing();
+        await _viewModel.AutoSaveOnExitAsync();
+    }
 }

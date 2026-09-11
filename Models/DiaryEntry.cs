@@ -21,7 +21,14 @@ public class DiaryEntry
 
     public int SentenceCount { get; set; }
 
+    public string Title { get; set; } = string.Empty;
+
     public string PreviewText { get; set; } = string.Empty;
+
+    [Ignore]
+    public string DisplayTitle => !string.IsNullOrWhiteSpace(Title)
+        ? Title
+        : $"{CreatedAt.ToLocalTime():dd MMMM yyyy, HH:mm}";
 
     public string ToPureText(IEnumerable<DiarySentence> sentences)
     {
