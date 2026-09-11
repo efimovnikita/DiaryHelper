@@ -24,6 +24,13 @@ public partial class DiaryEntryViewModel : BaseViewModel
     private string _currentInput = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPendingAnalysis))]
+    [NotifyPropertyChangedFor(nameof(IsAnalysisCorrect))]
+    [NotifyPropertyChangedFor(nameof(AnalysisHeader))]
+    [NotifyPropertyChangedFor(nameof(AnalysisCardBackground))]
+    [NotifyPropertyChangedFor(nameof(AnalysisCardStroke))]
+    [NotifyPropertyChangedFor(nameof(AnalysisHeaderColor))]
+    [NotifyPropertyChangedFor(nameof(AnalysisTranslationColor))]
     private SentenceAnalysis? _pendingAnalysis;
 
     [ObservableProperty]
@@ -49,13 +56,36 @@ public partial class DiaryEntryViewModel : BaseViewModel
     public ObservableCollection<DiarySentence> Sentences { get; } = new();
 
     public bool HasPendingAnalysis => PendingAnalysis != null;
+    public bool IsAnalysisCorrect => PendingAnalysis != null && !PendingAnalysis.HasCorrections;
     public bool HasActivePrompt => !string.IsNullOrWhiteSpace(CurrentPromptQuestion);
+
+    public string AnalysisHeader => (PendingAnalysis != null && !PendingAnalysis.HasCorrections)
+        ? AppStrings.AnalysisCorrectHeader
+        : (PendingAnalysis != null && PendingAnalysis.HasCorrections)
+            ? AppStrings.AnalysisNeedsFixHeader
+            : AppStrings.AnalysisHeader;
+
+    public Color AnalysisCardBackground => (PendingAnalysis != null && !PendingAnalysis.HasCorrections)
+        ? Color.FromArgb("#F0FDF4") // Clean light emerald green
+        : Color.FromArgb("#FFF7ED"); // Warm amber/orange
+
+    public Brush AnalysisCardStroke => (PendingAnalysis != null && !PendingAnalysis.HasCorrections)
+        ? new SolidColorBrush(Color.FromArgb("#BBF7D0")) // Light emerald border
+        : new SolidColorBrush(Color.FromArgb("#FED7AA")); // Soft warm orange border
+
+    public Color AnalysisHeaderColor => (PendingAnalysis != null && !PendingAnalysis.HasCorrections)
+        ? Color.FromArgb("#15803D") // Vibrant green text
+        : Color.FromArgb("#C2410C"); // Vibrant orange text
+
+    public Color AnalysisTranslationColor => (PendingAnalysis != null && !PendingAnalysis.HasCorrections)
+        ? Color.FromArgb("#166534") // Dark forest green text
+        : Color.FromArgb("#78350F"); // Warm deep brown text
 
     // Localized UI strings
     public string EmptySentencesHint => AppStrings.EmptySentencesHint;
     public string KickQuestionHeader => AppStrings.KickQuestionHeader;
-    public string AnalysisHeader => AppStrings.AnalysisHeader;
     public string ApplyFixButton => AppStrings.ApplyFixButton;
+    public string BackButtonText => AppStrings.BackButtonText;
     public string InputPlaceholder => AppStrings.InputPlaceholder;
     public string SaveButton => AppStrings.SaveButton;
     public string CheckButton => AppStrings.CheckButton;
@@ -357,7 +387,30 @@ public partial class DiaryEntryViewModel : BaseViewModel
         if (Shell.Current != null)
         {
             await Shell.Current.DisplayAlertAsync(AppStrings.SavedSuccessTitle, AppStrings.SavedSuccessMessage, AppStrings.Ok);
-            await Shell.Current.GoToAsync("..");
+            await GoBackAsync();
+        }
+    }
+
+    [RelayCommand]
+    public async Task GoBackAsync()
+    {
+        try
+        {
+            if (Shell.Current != null && Shell.Current.Navigation.NavigationStack.Count > 1)
+            {
+                await Shell.Current.Navigation.PopAsync();
+            }
+            else if (Shell.Current != null)
+            {
+                await Shell.Current.GoToAsync("..");
+            }
+        }
+        catch
+        {
+            if (Shell.Current != null)
+            {
+                await Shell.Current.GoToAsync("//WelcomeSettingsPage");
+            }
         }
     }
 

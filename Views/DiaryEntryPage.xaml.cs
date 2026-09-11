@@ -17,4 +17,10 @@ public partial class DiaryEntryPage : ContentPage
         base.OnAppearing();
         await _viewModel.InitializeAsync();
     }
+
+    protected override bool OnBackButtonPressed()
+    {
+        _viewModel.GoBackCommand.Execute(null);
+        return true;
+    }
 }

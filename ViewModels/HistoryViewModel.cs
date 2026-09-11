@@ -79,4 +79,29 @@ public partial class HistoryViewModel : BaseViewModel
     {
         await Shell.Current.GoToAsync(nameof(DiaryEntryPage));
     }
+
+    public string BackButtonText => AppStrings.BackButtonText;
+
+    [RelayCommand]
+    public async Task GoBackAsync()
+    {
+        try
+        {
+            if (Shell.Current != null && Shell.Current.Navigation.NavigationStack.Count > 1)
+            {
+                await Shell.Current.Navigation.PopAsync();
+            }
+            else if (Shell.Current != null)
+            {
+                await Shell.Current.GoToAsync("..");
+            }
+        }
+        catch
+        {
+            if (Shell.Current != null)
+            {
+                await Shell.Current.GoToAsync("//WelcomeSettingsPage");
+            }
+        }
+    }
 }

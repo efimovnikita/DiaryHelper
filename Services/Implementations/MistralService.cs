@@ -30,22 +30,34 @@ public class MistralService : IMistralService
         }
 
         var prompt = $@"
-You are a language tutor and grammar corrector for {language}.
-Analyze this sentence: ""{sentence}"".
+You are a tolerant, encouraging language tutor and grammar verifier for {language}.
+Analyze this sentence written by a language learner: ""{sentence}"".
 
-Your task:
-1. If the sentence is grammatically correct and uses natural vocabulary in {language}, return it as a single segment with isCorrection: false.
-2. If there are errors (grammar, spelling, unnatural word choice), return the CORRECTED version of the sentence in {language}, broken into segments.
-3. Mark segments that were CHANGED or CORRECTED as 'isCorrection: true'.
-4. Mark segments that remain the SAME as 'isCorrection: false'.
-5. IGNORE minor punctuation differences. Do not mark a segment as a correction if only punctuation changed.
+PRIMARY PRINCIPLE - AVOID UNNECESSARY STYLISTIC EDITS:
+- If the sentence is grammatically valid, understandable, and free of actual grammatical, spelling, agreement, or broken syntax errors, ACCEPT IT AS CORRECT!
+- Even if the sentence sounds somewhat simple, textbook-like, literal, or slightly unidiomatic (not 100% how a native speaker might say it), DO NOT REWRITE IT! Do NOT paraphrase or replace words with fancy synonyms!
+- The user must NEVER get trapped in an endless loop of stylistic rephrasing for a sentence that is already grammatically correct.
+
+WHEN TO MARK AS CORRECT (isCorrection: false):
+- The sentence follows the grammatical rules of {language}.
+- Word order is valid (even if alternative word orders exist).
+- Subject-verb, gender, and number agreements are correct.
+- Words are spelled correctly.
+-> In this case, return EXACTLY ONE segment containing the exact original sentence with isCorrection: false.
+
+WHEN TO SUGGEST CORRECTIONS (isCorrection: true):
+- Only when there is an OBJECTIVE ERROR:
+  1. Grammar errors: wrong tense, wrong verb conjugation, wrong grammatical case/gender/number agreement, missing required preposition or article.
+  2. Spelling errors: typos or misspelled words.
+  3. Ungrammatical word order: word order that is grammatically incorrect or breaks the syntactic rules of {language}.
+- When correcting, preserve as much of the user's original words and structure as possible. Correct ONLY the broken parts.
 
 CRITICAL RULES FOR SPACING:
 - If the sentence has NO errors, return EXACTLY ONE segment containing the full original sentence with isCorrection: false. Do NOT split correct sentences into words!
 - When correcting, preserve all spaces, punctuation, and capitalization so that joining all segments' texts (string concatenation) produces the complete, grammatically correct sentence WITH ALL SPACES INTACT.
 - Do NOT output bare words without spaces! Include trailing or leading spaces in the segments as needed.
 
-Example 1 (Error in verb):
+Example 1 (Objective grammar error in verb):
 Input: ""Io andare a casa.""
 Output JSON:
 {{
@@ -57,7 +69,28 @@ Output JSON:
   ]
 }}
 
-Example 2 (Completely correct sentence):
+Example 2 (Ungrammatical word order):
+Input: ""Yesterday to the store went I.""
+Output JSON:
+{{
+  ""original"": ""Yesterday to the store went I."",
+  ""segments"": [
+    {{ ""text"": ""Yesterday "", ""isCorrection"": false }},
+    {{ ""text"": ""I went to the store."", ""isCorrection"": true }}
+  ]
+}}
+
+Example 3 (Simple or literal, but grammatically valid - MUST BE ACCEPTED AS CORRECT):
+Input: ""I want to drink water because I have thirst.""
+Output JSON:
+{{
+  ""original"": ""I want to drink water because I have thirst."",
+  ""segments"": [
+    {{ ""text"": ""I want to drink water because I have thirst."", ""isCorrection"": false }}
+  ]
+}}
+
+Example 4 (Completely correct sentence):
 Input: ""Io voglio andare al mare.""
 Output JSON:
 {{
@@ -121,17 +154,36 @@ Return strictly JSON with this structure:
                 return CreateFallback(sentence);
             }
 
-            // Defensive step 1: If no segment was marked as a correction, preserve the original sentence intact!
-            if (!analysis.Segments.Any(s => s.IsCorrection))
+            bool hasFlaggedCorrections = analysis.Segments.Any(s => s.IsCorrection);
+            var concatenatedText = string.Concat(analysis.Segments.Select(s => s.Text ?? string.Empty)).Trim();
+
+            // Defensive step 1: If no segment was marked as a correction
+            if (!hasFlaggedCorrections)
             {
-                return new SentenceAnalysis
+                // Verify if Mistral altered the sentence anyway (e.g. reordered words without flagging isCorrection)
+                if (string.Equals(concatenatedText, sentence.Trim(), StringComparison.OrdinalIgnoreCase))
                 {
-                    Original = sentence,
-                    Segments = new List<TextSegment>
+                    return new SentenceAnalysis
                     {
-                        new() { Text = sentence, IsCorrection = false }
-                    }
-                };
+                        Original = sentence,
+                        Segments = new List<TextSegment>
+                        {
+                            new() { Text = sentence, IsCorrection = false }
+                        }
+                    };
+                }
+                else
+                {
+                    // Text was modified/reordered: treat as correction
+                    return new SentenceAnalysis
+                    {
+                        Original = sentence,
+                        Segments = new List<TextSegment>
+                        {
+                            new() { Text = concatenatedText, IsCorrection = true }
+                        }
+                    };
+                }
             }
 
             // Defensive step 2: If there ARE corrections, ensure spaces between adjacent segments are preserved

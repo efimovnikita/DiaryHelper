@@ -9,13 +9,41 @@
              Title="{Binding Title}"
              BackgroundColor="#F8FAFC">
 
-    <Grid RowDefinitions="*, Auto">
+    <Shell.BackButtonBehavior>
+        <BackButtonBehavior Command="{Binding GoBackCommand}" IsEnabled="True" IsVisible="True" />
+    </Shell.BackButtonBehavior>
+
+    <Grid RowDefinitions="Auto, *, Auto">
+        
+        <!-- Top Navigation / Title Bar -->
+        <Border Grid.Row="0" BackgroundColor="White" Stroke="#E2E8F0" StrokeThickness="1" Padding="12,8" Margin="12,8,12,0" StrokeShape="RoundRectangle 12">
+            <Grid ColumnDefinitions="Auto, *">
+                <Button Grid.Column="0"
+                        Text="←"
+                        Command="{Binding GoBackCommand}"
+                        BackgroundColor="#F1F5F9"
+                        TextColor="#334155"
+                        FontAttributes="Bold"
+                        CornerRadius="8"
+                        HeightRequest="36"
+                        WidthRequest="38"
+                        Padding="0" />
+                <Label Grid.Column="1"
+                       Text="{Binding Title}"
+                       FontSize="15"
+                       FontAttributes="Bold"
+                       TextColor="#0F172A"
+                       VerticalOptions="Center"
+                       Margin="10,0,0,0"
+                       LineBreakMode="TailTruncation" />
+            </Grid>
+        </Border>
         
         <!-- Sentences History List -->
-        <CollectionView Grid.Row="0" 
+        <CollectionView Grid.Row="1" 
                         ItemsSource="{Binding Sentences}"
                         EmptyView="{Binding EmptySentencesHint}"
-                        Margin="12,12,12,6">
+                        Margin="12,8,12,6">
             
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="models:DiarySentence">
@@ -99,7 +127,7 @@
         </CollectionView>
 
         <!-- Bottom Input & AI Assistant Area -->
-        <Border Grid.Row="1" Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="14" StrokeShape="RoundRectangle 20,20,0,0">
+        <Border Grid.Row="2" Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="14" StrokeShape="RoundRectangle 20,20,0,0">
             <VerticalStackLayout Spacing="10">
 
                 <!-- Active Persona Quick Switcher Chips (Scrollable so never clipped) -->
@@ -146,19 +174,24 @@
 
                 <!-- Grammar Checking Feedback Panel -->
                 <Border IsVisible="{Binding HasPendingAnalysis}"
-                        BackgroundColor="#FFF7ED"
-                        Stroke="#FFEDD5"
+                        BackgroundColor="{Binding AnalysisCardBackground}"
+                        Stroke="{Binding AnalysisCardStroke}"
                         StrokeThickness="1"
                         StrokeShape="RoundRectangle 14"
                         Padding="12,10">
                     <VerticalStackLayout Spacing="6">
                         <Grid ColumnDefinitions="*, Auto">
-                            <Label Text="{Binding AnalysisHeader}" FontSize="12" FontAttributes="Bold" TextColor="#C2410C" />
+                            <Label Text="{Binding AnalysisHeader}" FontSize="12" FontAttributes="Bold" TextColor="{Binding AnalysisHeaderColor}" VerticalOptions="Center" />
                             <HorizontalStackLayout Grid.Column="1" Spacing="6">
                                 <Button Text="{Binding ApplyFixButton}" 
                                         IsVisible="{Binding PendingAnalysis.HasCorrections}"
                                         Command="{Binding ApplyFixCommand}" 
                                         BackgroundColor="#C2410C" TextColor="White" 
+                                        CornerRadius="8" HeightRequest="28" Padding="8,2" FontSize="11" />
+                                <Button Text="{Binding AddButton}" 
+                                        IsVisible="{Binding IsAnalysisCorrect}"
+                                        Command="{Binding ConfirmSentenceCommand}" 
+                                        BackgroundColor="#15803D" TextColor="White" 
                                         CornerRadius="8" HeightRequest="28" Padding="8,2" FontSize="11" />
                                 <Button Text="✕" Command="{Binding DismissAnalysisCommand}" 
                                         BackgroundColor="Transparent" TextColor="#94A3B8" 
@@ -167,7 +200,7 @@
                         </Grid>
 
                         <controls:SegmentedLabel Segments="{Binding PendingAnalysis.Segments}" FontSize="15" />
-                        <Label Text="{Binding PendingAnalysis.Translation}" FontSize="13" FontAttributes="Italic" TextColor="#78350F" />
+                        <Label Text="{Binding PendingAnalysis.Translation}" FontSize="13" FontAttributes="Italic" TextColor="{Binding AnalysisTranslationColor}" />
                     </VerticalStackLayout>
                 </Border>
 

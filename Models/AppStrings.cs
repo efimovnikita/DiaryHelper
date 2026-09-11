@@ -47,6 +47,9 @@ public static class AppStrings
     public static string EmptySentencesHint => IsRussian ? "Пока нет добавленных предложений. Напишите первое предложение ниже." : "No sentences yet. Write your first sentence below.";
     public static string KickQuestionHeader => IsRussian ? "💡 Вопрос AI для вдохновения:" : "💡 AI Kick-Question:";
     public static string AnalysisHeader => IsRussian ? "🔎 Анализ предложения" : "🔎 Sentence Analysis";
+    public static string AnalysisCorrectHeader => IsRussian ? "✅ Предложение составлено верно!" : "✅ Sentence is correct!";
+    public static string AnalysisNeedsFixHeader => IsRussian ? "✏️ Предложены исправления:" : "✏️ Suggested corrections:";
+    public static string BackButtonText => IsRussian ? "Назад" : "Back";
     public static string ApplyFixButton => IsRussian ? "🪄 Применить" : "🪄 Apply Fix";
     public static string InputPlaceholder => IsRussian ? "Напишите следующее предложение..." : "Write your next sentence...";
     public static string SaveButton => IsRussian ? "💾 Сохранить" : "💾 Save";

@@ -8,16 +8,30 @@
              Title="{Binding Title}"
              BackgroundColor="#F8FAFC">
 
+    <Shell.BackButtonBehavior>
+        <BackButtonBehavior Command="{Binding GoBackCommand}" IsEnabled="True" IsVisible="True" />
+    </Shell.BackButtonBehavior>
+
     <Grid RowDefinitions="Auto, *">
         
         <!-- Top Toolbar -->
-        <Border Grid.Row="0" BackgroundColor="White" Stroke="#E2E8F0" StrokeThickness="1" Padding="16,12" Margin="12,12,12,6" StrokeShape="RoundRectangle 14">
-            <Grid ColumnDefinitions="*, Auto">
-                <VerticalStackLayout Grid.Column="0">
+        <Border Grid.Row="0" BackgroundColor="White" Stroke="#E2E8F0" StrokeThickness="1" Padding="14,12" Margin="12,12,12,6" StrokeShape="RoundRectangle 14">
+            <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="10">
+                <Button Grid.Column="0" 
+                        Text="←" 
+                        Command="{Binding GoBackCommand}"
+                        BackgroundColor="#F1F5F9"
+                        TextColor="#334155"
+                        FontAttributes="Bold"
+                        CornerRadius="10"
+                        HeightRequest="40"
+                        WidthRequest="40"
+                        Padding="0" />
+                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
                     <Label Text="{Binding ArchiveHeader}" FontSize="18" FontAttributes="Bold" TextColor="#0F172A" />
                     <Label Text="{Binding ArchiveSubtitle}" FontSize="12" TextColor="#64748B" />
                 </VerticalStackLayout>
-                <Button Grid.Column="1" 
+                <Button Grid.Column="2" 
                         Text="{Binding NewButtonShort}" 
                         Command="{Binding StartNewEntryCommand}"
                         BackgroundColor="#4F46E5"
