@@ -12,42 +12,14 @@
         <BackButtonBehavior Command="{Binding GoBackCommand}" IsEnabled="True" IsVisible="True" />
     </Shell.BackButtonBehavior>
 
-    <Grid RowDefinitions="Auto, *">
-        
-        <!-- Top Toolbar -->
-        <Border Grid.Row="0" BackgroundColor="White" Stroke="#E2E8F0" StrokeThickness="1" Padding="14,12" Margin="12,12,12,6" StrokeShape="RoundRectangle 14">
-            <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="10">
-                <Button Grid.Column="0" 
-                        Text="←" 
-                        Command="{Binding GoBackCommand}"
-                        BackgroundColor="#F1F5F9"
-                        TextColor="#334155"
-                        FontAttributes="Bold"
-                        CornerRadius="10"
-                        HeightRequest="40"
-                        WidthRequest="40"
-                        Padding="0" />
-                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
-                    <Label Text="{Binding ArchiveHeader}" FontSize="18" FontAttributes="Bold" TextColor="#0F172A" />
-                    <Label Text="{Binding ArchiveSubtitle}" FontSize="12" TextColor="#64748B" />
-                </VerticalStackLayout>
-                <Button Grid.Column="2" 
-                        Text="{Binding NewButtonShort}" 
-                        Command="{Binding StartNewEntryCommand}"
-                        BackgroundColor="#4F46E5"
-                        TextColor="White"
-                        FontAttributes="Bold"
-                        CornerRadius="10"
-                        HeightRequest="40"
-                        Padding="12,4" />
-            </Grid>
-        </Border>
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="{Binding NewButtonShort}" Command="{Binding StartNewEntryCommand}" Priority="0" Order="Primary" />
+    </ContentPage.ToolbarItems>
 
-        <!-- Entries List -->
-        <CollectionView Grid.Row="1"
-                        ItemsSource="{Binding Entries}"
-                        EmptyView="{Binding EmptyArchiveHint}"
-                        Margin="12,6">
+    <!-- Entries List -->
+    <CollectionView ItemsSource="{Binding Entries}"
+                    EmptyView="{Binding EmptyArchiveHint}"
+                    Margin="12,12">
             
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="models:DiaryEntry">
@@ -66,20 +38,23 @@
                                 </VerticalStackLayout>
 
                                 <Border Grid.Column="1" 
+                                        VerticalOptions="Center"
                                         BackgroundColor="#F1F5F9" 
                                         Stroke="#CBD5E1" 
                                         StrokeThickness="1" 
                                         StrokeShape="RoundRectangle 8" 
-                                        Padding="8,2">
-                                    <HorizontalStackLayout Spacing="3">
+                                        Padding="8,4">
+                                    <HorizontalStackLayout Spacing="3" VerticalOptions="Center">
                                         <Label Text="{Binding SentenceCount}" 
                                                FontSize="12" 
                                                FontAttributes="Bold" 
-                                               TextColor="#475569" />
+                                               TextColor="#475569"
+                                               VerticalTextAlignment="Center" />
                                         <Label Text="{Binding Source={RelativeSource AncestorType={x:Type vm:HistoryViewModel}}, Path=SentencesCountSuffix}" 
                                                FontSize="12" 
                                                FontAttributes="Bold" 
-                                               TextColor="#475569" />
+                                               TextColor="#475569"
+                                               VerticalTextAlignment="Center" />
                                     </HorizontalStackLayout>
                                 </Border>
                             </Grid>
@@ -125,6 +100,4 @@
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
-    </Grid>
-
-</ContentPage>
+    </ContentPage>

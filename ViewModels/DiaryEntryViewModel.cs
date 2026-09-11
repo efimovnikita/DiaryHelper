@@ -36,9 +36,12 @@ public partial class DiaryEntryViewModel : BaseViewModel
     private SentenceAnalysis? _pendingAnalysis;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CheckButtonText))]
+    [NotifyPropertyChangedFor(nameof(IsNotChecking))]
     private bool _isChecking;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowActivePromptCard))]
     private bool _isGeneratingPrompt;
 
     [ObservableProperty]
@@ -66,6 +69,10 @@ public partial class DiaryEntryViewModel : BaseViewModel
     public bool IsAnalysisCorrect => PendingAnalysis != null && !PendingAnalysis.HasCorrections;
     public bool HasAnalysisCorrections => PendingAnalysis != null && PendingAnalysis.HasCorrections;
     public bool HasActivePrompt => !string.IsNullOrWhiteSpace(CurrentPromptQuestion);
+    public bool ShowActivePromptCard => HasActivePrompt && !IsGeneratingPrompt;
+    public string GeneratingPromptText => AppStrings.GeneratingPromptText;
+    public string CheckButtonText => IsChecking ? AppStrings.CheckingButton : AppStrings.CheckButton;
+    public bool IsNotChecking => !IsChecking;
     public bool HasPromptTranslationAndEnabled => ShowPromptTranslation && !string.IsNullOrWhiteSpace(CurrentPromptQuestionTranslation);
 
     public string CorrectBadgeText => AppStrings.CorrectBadgeText;

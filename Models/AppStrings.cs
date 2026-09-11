@@ -52,6 +52,7 @@ public static class AppStrings
     public static string EntryFromDatePrefix => IsRussian ? "Запись от" : "Entry from";
     public static string EmptySentencesHint => IsRussian ? "Пока нет добавленных предложений. Напишите первое предложение ниже." : "No sentences yet. Write your first sentence below.";
     public static string KickQuestionHeader => IsRussian ? "💡 Вопрос AI для вдохновения:" : "💡 AI Kick-Question:";
+    public static string GeneratingPromptText => IsRussian ? "🤖 AI придумывает вопрос..." : "🤖 AI is thinking of a question...";
     public static string AnalysisHeader => IsRussian ? "🔎 Анализ предложения" : "🔎 Sentence Analysis";
     public static string AnalysisCorrectHeader => IsRussian ? "✅ Предложение составлено верно!" : "✅ Sentence is correct!";
     public static string AnalysisNeedsFixHeader => IsRussian ? "✏️ Предложены исправления:" : "✏️ Suggested corrections:";
@@ -62,6 +63,7 @@ public static class AppStrings
     public static string InputPlaceholder => IsRussian ? "Напишите следующее предложение..." : "Write your next sentence...";
     public static string SaveButton => IsRussian ? "💾 Сохранить" : "💾 Save";
     public static string CheckButton => IsRussian ? "🔎 Проверить" : "🔎 Check";
+    public static string CheckingButton => IsRussian ? "Проверка..." : "Checking...";
     public static string AddButton => IsRussian ? "➕ Добавить" : "➕ Add";
     public static string CopyPureButton => IsRussian ? "📋 Текст дневника" : "📋 Diary Text";
     public static string CopyGuidedButton => IsRussian ? "📋 Текст + Вопросы AI" : "📋 Diary + AI Questions";
