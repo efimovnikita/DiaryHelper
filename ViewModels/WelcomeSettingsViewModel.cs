@@ -23,6 +23,7 @@ public partial class WelcomeSettingsViewModel : BaseViewModel
 
     // Localized Strings for UI
     public string AppSubtitle => AppStrings.AppSubtitle;
+    public string AppShortSubtitle => AppStrings.AppShortSubtitle;
     public string ApiKeysSectionTitle => AppStrings.ApiKeysSectionTitle;
     public string MistralKeyLabel => AppStrings.MistralKeyLabel;
     public string MistralKeyPlaceholder => AppStrings.MistralKeyPlaceholder;

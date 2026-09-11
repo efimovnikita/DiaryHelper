@@ -18,6 +18,10 @@ public static class AppStrings
         ? "Персональный дневник для языковой практики с AI-собеседником" 
         : "Personal language practice diary with an AI companion";
 
+    public static string AppShortSubtitle => IsRussian 
+        ? "Языковая практика с AI" 
+        : "Language practice with AI";
+
     public static string ApiKeysSectionTitle => IsRussian ? "🔑 Облачные сервисы (API Keys)" : "🔑 Cloud Services (API Keys)";
     public static string ApiKeysConfiguredBadge => IsRussian ? "✅ Настроены" : "✅ Configured";
     public static string ApiKeysExpandHint => IsRussian ? "Нажмите, чтобы настроить ключи" : "Tap to view or change keys";

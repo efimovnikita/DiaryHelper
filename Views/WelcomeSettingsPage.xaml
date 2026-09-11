@@ -8,17 +8,21 @@
              Title="{Binding Title}"
              BackgroundColor="#F8FAFC">
 
+    <Shell.TitleView>
+        <VerticalStackLayout Spacing="1" VerticalOptions="Center">
+            <Label Text="📘 DiaryHelper"
+                   FontSize="16"
+                   FontAttributes="Bold"
+                   TextColor="#0F172A" />
+            <Label Text="{Binding AppShortSubtitle}"
+                   FontSize="11"
+                   TextColor="#64748B"
+                   LineBreakMode="TailTruncation" />
+        </VerticalStackLayout>
+    </Shell.TitleView>
+
     <ScrollView>
-        <VerticalStackLayout Spacing="20" Padding="24">
-            
-            <!-- Header Card -->
-            <Border Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="20" StrokeShape="RoundRectangle 20">
-                <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
-                    <Label Text="📘 DiaryHelper" FontSize="26" FontAttributes="Bold" TextColor="#1E293B" HorizontalOptions="Center" />
-                    <Label Text="{Binding AppSubtitle}" 
-                           FontSize="14" TextColor="#64748B" HorizontalTextAlignment="Center" />
-                </VerticalStackLayout>
-            </Border>
+        <VerticalStackLayout Spacing="16" Padding="18,14">
 
             <!-- API Keys Section (Collapsible) -->
             <Border Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="18" StrokeShape="RoundRectangle 20">
