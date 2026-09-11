@@ -1,58 +1,110 @@
-name: Build and Release Android APK
+name: Build & Release Android APK
 
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'v*'
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag (e.g. v1.0.3)'
+        required: false
+        default: 'v1.0.3'
+      draft:
+        description: 'Create as draft release'
+        required: false
+        type: boolean
+        default: false
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
 
 jobs:
   build:
+    name: Build & Publish Release APK
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Setup .NET
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up .NET 10
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
       - name: Install .NET MAUI Android Workload
-        run: dotnet workload install maui-android
-
-      - name: Setup Java JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'microsoft'
-          java-version: '17'
-
-      - name: Restore Dependencies
-        run: dotnet restore DiaryHelper.csproj
-
-      - name: Build and Publish Android APK
-        run: >
-          dotnet publish DiaryHelper.csproj
-          -f net10.0-android
-          -c Release
-          -p:AndroidPackageFormats=apk
-          -p:AndroidKeyStore=false
-          -o ./output
-
-      - name: Rename APK for ComiStore
         run: |
-          cp ./output/*-Signed.apk ./output/DiaryHelper.apk || cp ./output/*.apk ./output/DiaryHelper.apk
+          dotnet workload install maui-android
 
-      - name: Create GitHub Release
+      - name: Determine Release Tag
+        id: vars
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+          elif [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            TAG="${{ github.event.inputs.tag_name }}"
+          else
+            TAG="v1.0.${{ github.run_number }}"
+          fi
+          echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
+          echo "Resolved Release Tag: $TAG"
+
+      - name: Decode Android Production Keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > diaryhelper-release.keystore
+
+      - name: Publish and Sign Android APK
+        run: |
+          dotnet publish DiaryHelper.csproj -f net10.0-android -c Release \
+            -p:EmbedAssembliesIntoApk=true \
+            -p:AndroidKeyStore=true \
+            -p:AndroidSigningKeyStore=diaryhelper-release.keystore \
+            -p:AndroidSigningKeyAlias="${{ secrets.ANDROID_KEY_ALIAS }}" \
+            -p:AndroidSigningKeyPass="${{ secrets.ANDROID_KEY_PASSWORD }}" \
+            -p:AndroidSigningStorePass="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
+
+      - name: Prepare Release Artifacts
+        run: |
+          APK_PATH=$(find bin/Release/net10.0-android -name "*Signed.apk" -o -name "*.apk" | head -n 1)
+          if [ -z "$APK_PATH" ] || [ ! -f "$APK_PATH" ]; then
+            echo "Error: No APK file found in bin/Release/net10.0-android!"
+            find bin -type f -name "*.apk" || true
+            exit 1
+          fi
+          echo "Found APK at: $APK_PATH"
+          cp "$APK_PATH" "DiaryHelper-${{ env.RELEASE_TAG }}.apk"
+          cp "$APK_PATH" "DiaryHelper.apk"
+          ls -lh DiaryHelper*.apk
+
+      - name: Create GitHub Release and Upload APK
         uses: softprops/action-gh-release@v2
         with:
-          files: ./output/DiaryHelper.apk
-          name: "Release ${{ github.ref_name }}"
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: "DiaryHelper ${{ env.RELEASE_TAG }}"
+          draft: ${{ github.event.inputs.draft || false }}
+          prerelease: ${{ github.event.inputs.prerelease || false }}
           generate_release_notes: true
-          draft: false
-          prerelease: false
+          files: |
+            DiaryHelper-*.apk
+            DiaryHelper.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clean up Keystore
+        if: always()
+        run: |
+          rm -f diaryhelper-release.keystore
