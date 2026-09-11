@@ -13,10 +13,19 @@ public partial class HistoryViewModel : BaseViewModel
 
     public ObservableCollection<DiaryEntry> Entries { get; } = new();
 
+    // Localized UI strings
+    public string ArchiveHeader => AppStrings.ArchiveHeader;
+    public string ArchiveSubtitle => AppStrings.ArchiveSubtitle;
+    public string NewButtonShort => AppStrings.NewButtonShort;
+    public string EmptyArchiveHint => AppStrings.EmptyArchiveHint;
+    public string OpenButton => AppStrings.OpenButton;
+    public string DeleteButton => AppStrings.DeleteButton;
+    public string SentencesCountSuffix => AppStrings.SentencesCountSuffix;
+
     public HistoryViewModel(IDatabaseService databaseService)
     {
         _databaseService = databaseService;
-        Title = "История записей";
+        Title = AppStrings.HistoryTitle;
     }
 
     public async Task InitializeAsync()
@@ -34,7 +43,7 @@ public partial class HistoryViewModel : BaseViewModel
         catch (Exception ex)
         {
             if (Shell.Current != null)
-                await Shell.Current.DisplayAlertAsync("Ошибка", $"Не удалось загрузить историю: {ex.Message}", "OK");
+                await Shell.Current.DisplayAlertAsync(AppStrings.ErrorTitle, $"{AppStrings.ErrorTitle}: {ex.Message}", AppStrings.Ok);
         }
         finally
         {
@@ -54,7 +63,11 @@ public partial class HistoryViewModel : BaseViewModel
     {
         if (entry == null) return;
 
-        var confirm = Shell.Current != null && await Shell.Current.DisplayAlertAsync("Удаление", "Удалить эту запись из истории безвозвратно?", "Удалить", "Отмена");
+        var confirm = Shell.Current != null && await Shell.Current.DisplayAlertAsync(
+            AppStrings.DeleteConfirmTitle, 
+            AppStrings.DeleteConfirmMessage, 
+            AppStrings.DeleteButton, 
+            AppStrings.Cancel);
         if (!confirm) return;
 
         await _databaseService.DeleteEntryAsync(entry.Id);

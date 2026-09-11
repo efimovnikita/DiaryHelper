@@ -14,7 +14,7 @@
         <!-- Sentences History List -->
         <CollectionView Grid.Row="0" 
                         ItemsSource="{Binding Sentences}"
-                        EmptyView="Пока нет добавленных предложений. Напишите первое предложение ниже."
+                        EmptyView="{Binding EmptySentencesHint}"
                         Margin="12,12,12,6">
             
             <CollectionView.ItemTemplate>
@@ -102,21 +102,27 @@
         <Border Grid.Row="1" Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="14" StrokeShape="RoundRectangle 20,20,0,0">
             <VerticalStackLayout Spacing="10">
 
-                <!-- Active Persona Quick Switcher Chips -->
-                <HorizontalStackLayout Spacing="6" HorizontalOptions="Center">
-                    <Button Text="🧘 Друг" 
-                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DiaryEntryViewModel}}, Path=RequestKickQuestionCommand}"
-                            BackgroundColor="#EEF2FF" TextColor="#4338CA" CornerRadius="12" HeightRequest="32" Padding="10,2" FontSize="12" />
-                    <Button Text="🕵️ Хроникёр" 
-                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DiaryEntryViewModel}}, Path=RequestKickQuestionCommand}"
-                            BackgroundColor="#F0FDF4" TextColor="#15803D" CornerRadius="12" HeightRequest="32" Padding="10,2" FontSize="12" />
-                    <Button Text="🦉 Философ" 
-                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DiaryEntryViewModel}}, Path=RequestKickQuestionCommand}"
-                            BackgroundColor="#FDF4FF" TextColor="#86198F" CornerRadius="12" HeightRequest="32" Padding="10,2" FontSize="12" />
-                    <Button Text="⚡ Провокатор" 
-                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:DiaryEntryViewModel}}, Path=RequestKickQuestionCommand}"
-                            BackgroundColor="#FFFBEB" TextColor="#B45309" CornerRadius="12" HeightRequest="32" Padding="10,2" FontSize="12" />
-                </HorizontalStackLayout>
+                <!-- Active Persona Quick Switcher Chips (Scrollable so never clipped) -->
+                <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                    <HorizontalStackLayout Spacing="8" Padding="2,2">
+                        <Button Text="{Binding PersonaFriendText}" 
+                                Command="{Binding SelectPersonaCommand}"
+                                CommandParameter="Friend"
+                                BackgroundColor="#EEF2FF" TextColor="#4338CA" CornerRadius="12" HeightRequest="32" Padding="12,2" FontSize="12" />
+                        <Button Text="{Binding PersonaReporterText}" 
+                                Command="{Binding SelectPersonaCommand}"
+                                CommandParameter="Reporter"
+                                BackgroundColor="#F0FDF4" TextColor="#15803D" CornerRadius="12" HeightRequest="32" Padding="12,2" FontSize="12" />
+                        <Button Text="{Binding PersonaSageText}" 
+                                Command="{Binding SelectPersonaCommand}"
+                                CommandParameter="Sage"
+                                BackgroundColor="#FDF4FF" TextColor="#86198F" CornerRadius="12" HeightRequest="32" Padding="12,2" FontSize="12" />
+                        <Button Text="{Binding PersonaSparkText}" 
+                                Command="{Binding SelectPersonaCommand}"
+                                CommandParameter="Spark"
+                                BackgroundColor="#FFFBEB" TextColor="#B45309" CornerRadius="12" HeightRequest="32" Padding="12,2" FontSize="12" />
+                    </HorizontalStackLayout>
+                </ScrollView>
 
                 <!-- Kick Question Active Card -->
                 <Border IsVisible="{Binding HasActivePrompt}"
@@ -127,7 +133,7 @@
                         Padding="12,10">
                     <Grid RowDefinitions="Auto, Auto" ColumnDefinitions="*, Auto">
                         <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="4">
-                            <Label Text="💡 Вопрос AI для вдохновения:" FontSize="11" FontAttributes="Bold" TextColor="#6366F1" />
+                            <Label Text="{Binding KickQuestionHeader}" FontSize="11" FontAttributes="Bold" TextColor="#6366F1" />
                             <Label Text="{Binding CurrentPromptQuestion}" FontSize="15" FontAttributes="Bold" TextColor="#312E81" />
                             <Label Text="{Binding CurrentPromptQuestionTranslation}" FontSize="13" FontAttributes="Italic" TextColor="#4F46E5" />
                         </VerticalStackLayout>
@@ -147,9 +153,9 @@
                         Padding="12,10">
                     <VerticalStackLayout Spacing="6">
                         <Grid ColumnDefinitions="*, Auto">
-                            <Label Text="🔎 Анализ предложения" FontSize="12" FontAttributes="Bold" TextColor="#C2410C" />
+                            <Label Text="{Binding AnalysisHeader}" FontSize="12" FontAttributes="Bold" TextColor="#C2410C" />
                             <HorizontalStackLayout Grid.Column="1" Spacing="6">
-                                <Button Text="🪄 Применить" 
+                                <Button Text="{Binding ApplyFixButton}" 
                                         IsVisible="{Binding PendingAnalysis.HasCorrections}"
                                         Command="{Binding ApplyFixCommand}" 
                                         BackgroundColor="#C2410C" TextColor="White" 
@@ -167,7 +173,7 @@
 
                 <!-- Input Text Area -->
                 <Editor Text="{Binding CurrentInput}" 
-                        Placeholder="Напишите следующее предложение..."
+                        Placeholder="{Binding InputPlaceholder}"
                         HeightRequest="75"
                         BackgroundColor="#F1F5F9"
                         TextColor="#0F172A"
@@ -176,7 +182,7 @@
                 <!-- Action Toolbar -->
                 <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="8">
                     <Button Grid.Column="0"
-                            Text="💾 Сохранить"
+                            Text="{Binding SaveButton}"
                             Command="{Binding SaveEntryCommand}"
                             BackgroundColor="#0F172A"
                             TextColor="White"
@@ -186,7 +192,7 @@
                             FontSize="13" />
 
                     <Button Grid.Column="1"
-                            Text="🔎 Проверить"
+                            Text="{Binding CheckButton}"
                             Command="{Binding CheckSentenceCommand}"
                             BackgroundColor="#F1F5F9"
                             TextColor="#334155"
@@ -196,7 +202,7 @@
                             FontSize="13" />
 
                     <Button Grid.Column="2"
-                            Text="➕ Добавить"
+                            Text="{Binding AddButton}"
                             Command="{Binding ConfirmSentenceCommand}"
                             BackgroundColor="#4F46E5"
                             TextColor="White"
@@ -209,14 +215,14 @@
                 <!-- Export Options Bar -->
                 <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
                     <Button Grid.Column="0"
-                            Text="📋 Текст дневника"
+                            Text="{Binding CopyPureButton}"
                             Command="{Binding CopyPureTextCommand}"
                             BackgroundColor="Transparent"
                             TextColor="#64748B"
                             FontSize="12" />
 
                     <Button Grid.Column="1"
-                            Text="📋 Текст + Вопросы AI"
+                            Text="{Binding CopyGuidedButton}"
                             Command="{Binding CopyGuidedDialogueCommand}"
                             BackgroundColor="Transparent"
                             TextColor="#64748B"

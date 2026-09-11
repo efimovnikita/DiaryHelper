@@ -15,7 +15,7 @@
             <Border Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="20" StrokeShape="RoundRectangle 20">
                 <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
                     <Label Text="📘 DiaryHelper" FontSize="26" FontAttributes="Bold" TextColor="#1E293B" HorizontalOptions="Center" />
-                    <Label Text="Персональный дневник для языковой практики с AI-собеседником" 
+                    <Label Text="{Binding AppSubtitle}" 
                            FontSize="14" TextColor="#64748B" HorizontalTextAlignment="Center" />
                 </VerticalStackLayout>
             </Border>
@@ -23,26 +23,26 @@
             <!-- API Keys Section -->
             <Border Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="20" StrokeShape="RoundRectangle 20">
                 <VerticalStackLayout Spacing="16">
-                    <Label Text="🔑 Облачные сервисы (API Keys)" FontSize="18" FontAttributes="Bold" TextColor="#0F172A" />
+                    <Label Text="{Binding ApiKeysSectionTitle}" FontSize="18" FontAttributes="Bold" TextColor="#0F172A" />
                     
                     <VerticalStackLayout Spacing="6">
-                        <Label Text="Mistral AI API Key" FontSize="13" FontAttributes="Bold" TextColor="#475569" />
+                        <Label Text="{Binding MistralKeyLabel}" FontSize="13" FontAttributes="Bold" TextColor="#475569" />
                         <Entry Text="{Binding MistralApiKey}" 
                                IsPassword="True" 
-                               Placeholder="Вставьте ключ Mistral API..." 
+                               Placeholder="{Binding MistralKeyPlaceholder}" 
                                TextColor="#1E293B"
                                BackgroundColor="#F1F5F9" />
-                        <Label Text="Используется для проверки грамматики и наводящих вопросов" FontSize="11" TextColor="#94A3B8" />
+                        <Label Text="{Binding MistralKeyHint}" FontSize="11" TextColor="#94A3B8" />
                     </VerticalStackLayout>
 
                     <VerticalStackLayout Spacing="6">
-                        <Label Text="Google Cloud Translation API Key" FontSize="13" FontAttributes="Bold" TextColor="#475569" />
+                        <Label Text="{Binding GoogleKeyLabel}" FontSize="13" FontAttributes="Bold" TextColor="#475569" />
                         <Entry Text="{Binding GoogleTranslateApiKey}" 
                                IsPassword="True" 
-                               Placeholder="Вставьте ключ Google Translate API..." 
+                               Placeholder="{Binding GoogleKeyPlaceholder}" 
                                TextColor="#1E293B"
                                BackgroundColor="#F1F5F9" />
-                        <Label Text="Используется для перевода предложений и вопросов бота" FontSize="11" TextColor="#94A3B8" />
+                        <Label Text="{Binding GoogleKeyHint}" FontSize="11" TextColor="#94A3B8" />
                     </VerticalStackLayout>
                 </VerticalStackLayout>
             </Border>
@@ -50,11 +50,11 @@
             <!-- Languages & Persona Settings -->
             <Border Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="20" StrokeShape="RoundRectangle 20">
                 <VerticalStackLayout Spacing="16">
-                    <Label Text="🌍 Языковые настройки" FontSize="18" FontAttributes="Bold" TextColor="#0F172A" />
+                    <Label Text="{Binding LanguageSectionTitle}" FontSize="18" FontAttributes="Bold" TextColor="#0F172A" />
 
                     <Grid ColumnDefinitions="*, *" ColumnSpacing="12">
                         <VerticalStackLayout Grid.Column="0" Spacing="6">
-                            <Label Text="Язык дневника" FontSize="13" FontAttributes="Bold" TextColor="#475569" />
+                            <Label Text="{Binding DiaryLanguageLabel}" FontSize="13" FontAttributes="Bold" TextColor="#475569" />
                             <Picker ItemsSource="{Binding SupportedLanguages}"
                                     ItemDisplayBinding="{Binding DisplayName}"
                                     SelectedItem="{Binding SelectedSourceLanguage}"
@@ -63,7 +63,7 @@
                         </VerticalStackLayout>
 
                         <VerticalStackLayout Grid.Column="1" Spacing="6">
-                            <Label Text="Язык перевода" FontSize="13" FontAttributes="Bold" TextColor="#475569" />
+                            <Label Text="{Binding TranslationLanguageLabel}" FontSize="13" FontAttributes="Bold" TextColor="#475569" />
                             <Picker ItemsSource="{Binding SupportedLanguages}"
                                     ItemDisplayBinding="{Binding DisplayName}"
                                     SelectedItem="{Binding SelectedTargetLanguage}"
@@ -73,9 +73,10 @@
                     </Grid>
 
                     <VerticalStackLayout Spacing="6">
-                        <Label Text="Архетип AI-собеседника по умолчанию" FontSize="13" FontAttributes="Bold" TextColor="#475569" />
+                        <Label Text="{Binding DefaultPersonaLabel}" FontSize="13" FontAttributes="Bold" TextColor="#475569" />
                         <Picker ItemsSource="{Binding AvailablePersonas}"
-                                SelectedItem="{Binding SelectedPersona}"
+                                ItemDisplayBinding="{Binding DisplayName}"
+                                SelectedItem="{Binding SelectedPersonaOption}"
                                 BackgroundColor="#F1F5F9"
                                 TextColor="#1E293B" />
                     </VerticalStackLayout>
@@ -84,7 +85,7 @@
 
             <!-- Actions -->
             <VerticalStackLayout Spacing="12">
-                <Button Text="✍️ Начать новую запись"
+                <Button Text="{Binding StartNewEntryButton}"
                         Command="{Binding StartNewEntryCommand}"
                         BackgroundColor="#4F46E5"
                         TextColor="White"
@@ -93,7 +94,7 @@
                         HeightRequest="52"
                         FontSize="16" />
 
-                <Button Text="📖 История записей"
+                <Button Text="{Binding HistoryButton}"
                         Command="{Binding OpenHistoryCommand}"
                         BackgroundColor="White"
                         BorderColor="#E2E8F0"
@@ -104,7 +105,7 @@
                         HeightRequest="48"
                         FontSize="15" />
 
-                <Button Text="Сохранить настройки"
+                <Button Text="{Binding SaveSettingsButton}"
                         Command="{Binding SaveSettingsCommand}"
                         BackgroundColor="Transparent"
                         TextColor="#64748B"

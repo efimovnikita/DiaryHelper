@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DiaryHelper.Models;
+using DiaryHelper.Services.Implementations;
 using DiaryHelper.Services.Interfaces;
 using DiaryHelper.Views;
 
@@ -12,7 +13,30 @@ public partial class WelcomeSettingsViewModel : BaseViewModel
     private readonly IDatabaseService _databaseService;
 
     public IReadOnlyList<LanguageOption> SupportedLanguages => LanguageOption.SupportedLanguages;
-    public IReadOnlyList<PersonaType> AvailablePersonas { get; } = Enum.GetValues<PersonaType>();
+    public IReadOnlyList<PersonaOption> AvailablePersonas { get; } = new List<PersonaOption>
+    {
+        new(PersonaType.Friend, AppStrings.PersonaFriend),
+        new(PersonaType.Reporter, AppStrings.PersonaReporter),
+        new(PersonaType.Sage, AppStrings.PersonaSage),
+        new(PersonaType.Spark, AppStrings.PersonaSpark)
+    };
+
+    // Localized Strings for UI
+    public string AppSubtitle => AppStrings.AppSubtitle;
+    public string ApiKeysSectionTitle => AppStrings.ApiKeysSectionTitle;
+    public string MistralKeyLabel => AppStrings.MistralKeyLabel;
+    public string MistralKeyPlaceholder => AppStrings.MistralKeyPlaceholder;
+    public string MistralKeyHint => AppStrings.MistralKeyHint;
+    public string GoogleKeyLabel => AppStrings.GoogleKeyLabel;
+    public string GoogleKeyPlaceholder => AppStrings.GoogleKeyPlaceholder;
+    public string GoogleKeyHint => AppStrings.GoogleKeyHint;
+    public string LanguageSectionTitle => AppStrings.LanguageSectionTitle;
+    public string DiaryLanguageLabel => AppStrings.DiaryLanguageLabel;
+    public string TranslationLanguageLabel => AppStrings.TranslationLanguageLabel;
+    public string DefaultPersonaLabel => AppStrings.DefaultPersonaLabel;
+    public string StartNewEntryButton => AppStrings.StartNewEntryButton;
+    public string HistoryButton => AppStrings.HistoryButton;
+    public string SaveSettingsButton => AppStrings.SaveSettingsButton;
 
     [ObservableProperty]
     private string _mistralApiKey = string.Empty;
@@ -27,7 +51,7 @@ public partial class WelcomeSettingsViewModel : BaseViewModel
     private LanguageOption? _selectedTargetLanguage;
 
     [ObservableProperty]
-    private PersonaType _selectedPersona = PersonaType.Friend;
+    private PersonaOption? _selectedPersonaOption;
 
     [ObservableProperty]
     private string _statusMessage = string.Empty;
@@ -49,19 +73,23 @@ public partial class WelcomeSettingsViewModel : BaseViewModel
             MistralApiKey = await _settingsService.GetMistralApiKeyAsync() ?? string.Empty;
             GoogleTranslateApiKey = await _settingsService.GetGoogleTranslateApiKeyAsync() ?? string.Empty;
 
+            var defaultSrc = SettingsService.GetSystemDefaultSourceLanguage();
             var srcCode = _settingsService.GetSourceLanguage();
             SelectedSourceLanguage = SupportedLanguages.FirstOrDefault(l => l.Code == srcCode) 
-                                     ?? SupportedLanguages.First(l => l.Code == "en");
+                                     ?? SupportedLanguages.First(l => l.Code == defaultSrc);
 
+            var defaultTgt = SettingsService.GetSystemDefaultTargetLanguage();
             var tgtCode = _settingsService.GetTargetLanguage();
             SelectedTargetLanguage = SupportedLanguages.FirstOrDefault(l => l.Code == tgtCode) 
-                                     ?? SupportedLanguages.First(l => l.Code == "ru");
+                                     ?? SupportedLanguages.First(l => l.Code == defaultTgt);
 
-            SelectedPersona = _settingsService.GetDefaultPersona();
+            var defaultPersona = _settingsService.GetDefaultPersona();
+            SelectedPersonaOption = AvailablePersonas.FirstOrDefault(p => p.Type == defaultPersona)
+                                    ?? AvailablePersonas[0];
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Ошибка загрузки: {ex.Message}";
+            StatusMessage = $"{AppStrings.ErrorTitle}: {ex.Message}";
         }
         finally
         {
@@ -69,8 +97,7 @@ public partial class WelcomeSettingsViewModel : BaseViewModel
         }
     }
 
-    [RelayCommand]
-    public async Task SaveSettingsAsync()
+    private async Task SaveSettingsInternalAsync()
     {
         await _settingsService.SetMistralApiKeyAsync(MistralApiKey);
         await _settingsService.SetGoogleTranslateApiKeyAsync(GoogleTranslateApiKey);
@@ -81,24 +108,35 @@ public partial class WelcomeSettingsViewModel : BaseViewModel
         if (SelectedTargetLanguage != null)
             _settingsService.SetTargetLanguage(SelectedTargetLanguage.Code);
 
-        _settingsService.SetDefaultPersona(SelectedPersona);
+        if (SelectedPersonaOption != null)
+            _settingsService.SetDefaultPersona(SelectedPersonaOption.Type);
+    }
+
+    [RelayCommand]
+    public async Task SaveSettingsAsync()
+    {
+        await SaveSettingsInternalAsync();
 
         if (Shell.Current != null)
         {
-            await Shell.Current.DisplayAlertAsync("Настройки", "Настройки успешно сохранены!", "OK");
+            await Shell.Current.DisplayAlertAsync(AppStrings.SettingsSavedTitle, AppStrings.SettingsSavedMessage, AppStrings.Ok);
         }
     }
 
     [RelayCommand]
     public async Task StartNewEntryAsync()
     {
-        await SaveSettingsAsync();
+        await SaveSettingsInternalAsync();
 
         if (string.IsNullOrWhiteSpace(MistralApiKey))
         {
             if (Shell.Current != null)
             {
-                var proceed = await Shell.Current.DisplayAlertAsync("Внимание", "Не указан API-ключ Mistral. Без него проверка грамматики и подсказки бота будут недоступны. Продолжить?", "Да", "Отмена");
+                var proceed = await Shell.Current.DisplayAlertAsync(
+                    AppStrings.MissingMistralKeyAlertTitle, 
+                    AppStrings.MissingMistralKeyAlertMessage, 
+                    AppStrings.Yes, 
+                    AppStrings.Cancel);
                 if (!proceed) return;
             }
         }
@@ -112,7 +150,7 @@ public partial class WelcomeSettingsViewModel : BaseViewModel
     [RelayCommand]
     public async Task OpenHistoryAsync()
     {
-        await SaveSettingsAsync();
+        await SaveSettingsInternalAsync();
         if (Shell.Current != null)
         {
             await Shell.Current.GoToAsync(nameof(HistoryPage));

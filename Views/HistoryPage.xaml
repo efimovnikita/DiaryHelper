@@ -14,11 +14,11 @@
         <Border Grid.Row="0" BackgroundColor="White" Stroke="#E2E8F0" StrokeThickness="1" Padding="16,12" Margin="12,12,12,6" StrokeShape="RoundRectangle 14">
             <Grid ColumnDefinitions="*, Auto">
                 <VerticalStackLayout Grid.Column="0">
-                    <Label Text="Архив записей дневника" FontSize="18" FontAttributes="Bold" TextColor="#0F172A" />
-                    <Label Text="Просматривайте и продолжайте свои записи" FontSize="12" TextColor="#64748B" />
+                    <Label Text="{Binding ArchiveHeader}" FontSize="18" FontAttributes="Bold" TextColor="#0F172A" />
+                    <Label Text="{Binding ArchiveSubtitle}" FontSize="12" TextColor="#64748B" />
                 </VerticalStackLayout>
                 <Button Grid.Column="1" 
-                        Text="✍️ Новая" 
+                        Text="{Binding NewButtonShort}" 
                         Command="{Binding StartNewEntryCommand}"
                         BackgroundColor="#4F46E5"
                         TextColor="White"
@@ -32,7 +32,7 @@
         <!-- Entries List -->
         <CollectionView Grid.Row="1"
                         ItemsSource="{Binding Entries}"
-                        EmptyView="Архив пуст. Создайте свою первую запись!"
+                        EmptyView="{Binding EmptyArchiveHint}"
                         Margin="12,6">
             
             <CollectionView.ItemTemplate>
@@ -55,10 +55,16 @@
                                         StrokeThickness="1" 
                                         StrokeShape="RoundRectangle 8" 
                                         Padding="8,2">
-                                    <Label Text="{Binding SentenceCount, StringFormat='{0} предл.'}" 
-                                           FontSize="12" 
-                                           FontAttributes="Bold" 
-                                           TextColor="#475569" />
+                                    <HorizontalStackLayout Spacing="3">
+                                        <Label Text="{Binding SentenceCount}" 
+                                               FontSize="12" 
+                                               FontAttributes="Bold" 
+                                               TextColor="#475569" />
+                                        <Label Text="{Binding Source={RelativeSource AncestorType={x:Type vm:HistoryViewModel}}, Path=SentencesCountSuffix}" 
+                                               FontSize="12" 
+                                               FontAttributes="Bold" 
+                                               TextColor="#475569" />
+                                    </HorizontalStackLayout>
                                 </Border>
                             </Grid>
 
@@ -72,13 +78,13 @@
                             <!-- Bottom Info & Buttons -->
                             <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="8" Margin="0,6,0,0">
                                 <Label Grid.Column="0" 
-                                       Text="{Binding SourceLanguage, StringFormat='Язык: {0}'}" 
+                                       Text="{Binding SourceLanguage, StringFormat='Lang: {0}'}" 
                                        FontSize="12" 
                                        TextColor="#94A3B8" 
                                        VerticalOptions="Center" />
 
                                 <Button Grid.Column="1" 
-                                        Text="Открыть" 
+                                        Text="{Binding Source={RelativeSource AncestorType={x:Type vm:HistoryViewModel}}, Path=OpenButton}" 
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HistoryViewModel}}, Path=OpenEntryCommand}"
                                         CommandParameter="{Binding .}"
                                         BackgroundColor="#EEF2FF"
@@ -89,7 +95,7 @@
                                         Padding="12,2" />
 
                                 <Button Grid.Column="2" 
-                                        Text="Удалить" 
+                                        Text="{Binding Source={RelativeSource AncestorType={x:Type vm:HistoryViewModel}}, Path=DeleteButton}" 
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HistoryViewModel}}, Path=DeleteEntryCommand}"
                                         CommandParameter="{Binding .}"
                                         BackgroundColor="#FEE2E2"

@@ -51,6 +51,22 @@ public partial class DiaryEntryViewModel : BaseViewModel
     public bool HasPendingAnalysis => PendingAnalysis != null;
     public bool HasActivePrompt => !string.IsNullOrWhiteSpace(CurrentPromptQuestion);
 
+    // Localized UI strings
+    public string EmptySentencesHint => AppStrings.EmptySentencesHint;
+    public string KickQuestionHeader => AppStrings.KickQuestionHeader;
+    public string AnalysisHeader => AppStrings.AnalysisHeader;
+    public string ApplyFixButton => AppStrings.ApplyFixButton;
+    public string InputPlaceholder => AppStrings.InputPlaceholder;
+    public string SaveButton => AppStrings.SaveButton;
+    public string CheckButton => AppStrings.CheckButton;
+    public string AddButton => AppStrings.AddButton;
+    public string CopyPureButton => AppStrings.CopyPureButton;
+    public string CopyGuidedButton => AppStrings.CopyGuidedButton;
+    public string PersonaFriendText => AppStrings.PersonaFriend;
+    public string PersonaReporterText => AppStrings.PersonaReporter;
+    public string PersonaSageText => AppStrings.PersonaSage;
+    public string PersonaSparkText => AppStrings.PersonaSpark;
+
     public DiaryEntryViewModel(
         IDatabaseService databaseService,
         ISettingsService settingsService,
@@ -61,7 +77,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
         _settingsService = settingsService;
         _mistralService = mistralService;
         _translateService = translateService;
-        Title = "Новая запись";
+        Title = AppStrings.NewEntryTitle;
     }
 
     public async Task InitializeAsync()
@@ -74,7 +90,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
             if (loaded != null)
             {
                 _entry = loaded;
-                Title = $"Запись от {_entry.CreatedAt.ToLocalTime():dd.MM.yyyy HH:mm}";
+                Title = $"{AppStrings.EntryFromDatePrefix} {_entry.CreatedAt.ToLocalTime():dd.MM.yyyy HH:mm}";
 
                 var sentences = await _databaseService.GetSentencesAsync(EntryId);
                 Sentences.Clear();
@@ -94,6 +110,16 @@ public partial class DiaryEntryViewModel : BaseViewModel
             DefaultPersona = ActivePersona.ToString()
         };
         Sentences.Clear();
+    }
+
+    [RelayCommand]
+    public async Task SelectPersonaAsync(string personaName)
+    {
+        if (Enum.TryParse<PersonaType>(personaName, out var persona))
+        {
+            ActivePersona = persona;
+            await RequestKickQuestionAsync();
+        }
     }
 
     [RelayCommand]
@@ -122,12 +148,12 @@ public partial class DiaryEntryViewModel : BaseViewModel
         catch (OperationCanceledException)
         {
             if (Shell.Current != null)
-                await Shell.Current.DisplayAlertAsync("Таймаут", "Проверка заняла больше 10 секунд. Пожалуйста, попробуйте снова.", "OK");
+                await Shell.Current.DisplayAlertAsync(AppStrings.TimeoutTitle, AppStrings.TimeoutMessage, AppStrings.Ok);
         }
         catch (Exception ex)
         {
             if (Shell.Current != null)
-                await Shell.Current.DisplayAlertAsync("Ошибка", $"Сбой при проверке: {ex.Message}", "OK");
+                await Shell.Current.DisplayAlertAsync(AppStrings.ErrorTitle, $"{AppStrings.ErrorTitle}: {ex.Message}", AppStrings.Ok);
         }
         finally
         {
@@ -247,7 +273,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
         catch (Exception ex)
         {
             if (Shell.Current != null)
-                await Shell.Current.DisplayAlertAsync("Подсказка AI", $"Не удалось получить вопрос: {ex.Message}", "OK");
+                await Shell.Current.DisplayAlertAsync(AppStrings.BotPromptTitle, $"{AppStrings.ErrorTitle}: {ex.Message}", AppStrings.Ok);
         }
         finally
         {
@@ -311,7 +337,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
         if (Sentences.Count == 0 && string.IsNullOrWhiteSpace(CurrentInput))
         {
             if (Shell.Current != null)
-                await Shell.Current.DisplayAlertAsync("Внимание", "Запись пуста. Напишите хотя бы одно предложение.", "OK");
+                await Shell.Current.DisplayAlertAsync(AppStrings.WarningTitle, AppStrings.EmptyEntryAlert, AppStrings.Ok);
             return;
         }
 
@@ -330,7 +356,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
 
         if (Shell.Current != null)
         {
-            await Shell.Current.DisplayAlertAsync("Сохранено", "Запись дневника успешно сохранена в локальной базе данных!", "OK");
+            await Shell.Current.DisplayAlertAsync(AppStrings.SavedSuccessTitle, AppStrings.SavedSuccessMessage, AppStrings.Ok);
             await Shell.Current.GoToAsync("..");
         }
     }
@@ -343,7 +369,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
 
         await Clipboard.Default.SetTextAsync(text);
         if (Shell.Current != null)
-            await Shell.Current.DisplayAlertAsync("Буфер обмена", "Текст дневника скопирован без вопросов бота!", "OK");
+            await Shell.Current.DisplayAlertAsync(AppStrings.ClipboardTitle, AppStrings.CopiedPureMessage, AppStrings.Ok);
     }
 
     [RelayCommand]
@@ -354,6 +380,6 @@ public partial class DiaryEntryViewModel : BaseViewModel
 
         await Clipboard.Default.SetTextAsync(text);
         if (Shell.Current != null)
-            await Shell.Current.DisplayAlertAsync("Буфер обмена", "Текст дневника вместе с вопросами AI скопирован!", "OK");
+            await Shell.Current.DisplayAlertAsync(AppStrings.ClipboardTitle, AppStrings.CopiedGuidedMessage, AppStrings.Ok);
     }
 }

@@ -8,15 +8,17 @@ public enum PersonaType
     Spark
 }
 
+public record PersonaOption(PersonaType Type, string DisplayName);
+
 public static class PersonaExtensions
 {
     public static string GetDisplayName(this PersonaType persona) => persona switch
     {
-        PersonaType.Friend => "Эмпатичный друг",
-        PersonaType.Reporter => "Хроникёр",
-        PersonaType.Sage => "Философ",
-        PersonaType.Spark => "Провокатор",
-        _ => "Друг"
+        PersonaType.Friend => AppStrings.PersonaFriend,
+        PersonaType.Reporter => AppStrings.PersonaReporter,
+        PersonaType.Sage => AppStrings.PersonaSage,
+        PersonaType.Spark => AppStrings.PersonaSpark,
+        _ => AppStrings.PersonaFriend
     };
 
     public static string GetEmoji(this PersonaType persona) => persona switch
@@ -37,3 +39,4 @@ public static class PersonaExtensions
         _ => "Supportive and curious diary companion."
     };
 }
+

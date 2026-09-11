@@ -40,6 +40,33 @@ Your task:
 4. Mark segments that remain the SAME as 'isCorrection: false'.
 5. IGNORE minor punctuation differences. Do not mark a segment as a correction if only punctuation changed.
 
+CRITICAL RULES FOR SPACING:
+- If the sentence has NO errors, return EXACTLY ONE segment containing the full original sentence with isCorrection: false. Do NOT split correct sentences into words!
+- When correcting, preserve all spaces, punctuation, and capitalization so that joining all segments' texts (string concatenation) produces the complete, grammatically correct sentence WITH ALL SPACES INTACT.
+- Do NOT output bare words without spaces! Include trailing or leading spaces in the segments as needed.
+
+Example 1 (Error in verb):
+Input: ""Io andare a casa.""
+Output JSON:
+{{
+  ""original"": ""Io andare a casa."",
+  ""segments"": [
+    {{ ""text"": ""Io "", ""isCorrection"": false }},
+    {{ ""text"": ""vado"", ""isCorrection"": true }},
+    {{ ""text"": "" a casa."", ""isCorrection"": false }}
+  ]
+}}
+
+Example 2 (Completely correct sentence):
+Input: ""Io voglio andare al mare.""
+Output JSON:
+{{
+  ""original"": ""Io voglio andare al mare."",
+  ""segments"": [
+    {{ ""text"": ""Io voglio andare al mare."", ""isCorrection"": false }}
+  ]
+}}
+
 Return strictly JSON with this structure:
 {{
   ""original"": ""{sentence}"",
@@ -94,14 +121,57 @@ Return strictly JSON with this structure:
                 return CreateFallback(sentence);
             }
 
+            // Defensive step 1: If no segment was marked as a correction, preserve the original sentence intact!
+            if (!analysis.Segments.Any(s => s.IsCorrection))
+            {
+                return new SentenceAnalysis
+                {
+                    Original = sentence,
+                    Segments = new List<TextSegment>
+                    {
+                        new() { Text = sentence, IsCorrection = false }
+                    }
+                };
+            }
+
+            // Defensive step 2: If there ARE corrections, ensure spaces between adjacent segments are preserved
+            var cleanedSegments = new List<TextSegment>();
+            for (int i = 0; i < analysis.Segments.Count; i++)
+            {
+                var current = analysis.Segments[i];
+                var currentText = current.Text ?? string.Empty;
+                if (string.IsNullOrEmpty(currentText)) continue;
+
+                if (i < analysis.Segments.Count - 1)
+                {
+                    var next = analysis.Segments[i + 1];
+                    var nextText = next.Text ?? string.Empty;
+
+                    bool currentEndsWithSpaceOrApostrophe = currentText.EndsWith(' ') || currentText.EndsWith('\'') || currentText.EndsWith('’') || currentText.EndsWith('-');
+                    bool nextStartsWithSpaceOrPunct = string.IsNullOrEmpty(nextText) || nextText.StartsWith(' ') || (char.IsPunctuation(nextText[0]) && nextText[0] != '¿' && nextText[0] != '¡');
+
+                    if (!currentEndsWithSpaceOrApostrophe && !nextStartsWithSpaceOrPunct)
+                    {
+                        currentText += " ";
+                    }
+                }
+
+                cleanedSegments.Add(new TextSegment
+                {
+                    Text = currentText,
+                    IsCorrection = current.IsCorrection
+                });
+            }
+
+            if (cleanedSegments.Count == 0)
+            {
+                return CreateFallback(sentence);
+            }
+
             return new SentenceAnalysis
             {
                 Original = sentence,
-                Segments = analysis.Segments.Select(s => new TextSegment
-                {
-                    Text = s.Text ?? string.Empty,
-                    IsCorrection = s.IsCorrection
-                }).ToList()
+                Segments = cleanedSegments
             };
         }
         catch (Exception ex)

@@ -73,9 +73,22 @@ public class SettingsService : ISettingsService
         }
     }
 
+    public static string GetSystemDefaultTargetLanguage()
+    {
+        var sys = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant();
+        var supported = LanguageOption.SupportedLanguages.Select(l => l.Code).ToHashSet();
+        return supported.Contains(sys) ? sys : "en";
+    }
+
+    public static string GetSystemDefaultSourceLanguage()
+    {
+        var target = GetSystemDefaultTargetLanguage();
+        return target == "en" ? "it" : "en";
+    }
+
     public string GetSourceLanguage()
     {
-        return Preferences.Default.Get(SourceLanguageSetting, "en");
+        return Preferences.Default.Get(SourceLanguageSetting, GetSystemDefaultSourceLanguage());
     }
 
     public void SetSourceLanguage(string code)
@@ -85,7 +98,7 @@ public class SettingsService : ISettingsService
 
     public string GetTargetLanguage()
     {
-        return Preferences.Default.Get(TargetLanguageSetting, "ru");
+        return Preferences.Default.Get(TargetLanguageSetting, GetSystemDefaultTargetLanguage());
     }
 
     public void SetTargetLanguage(string code)
