@@ -29,35 +29,72 @@ public class MistralService : IMistralService
             return CreateFallback(sentence);
         }
 
+        var langName = LanguageOption.GetLanguageName(language);
+
         var prompt = $@"
-You are a tolerant, encouraging language tutor and grammar verifier for {language}.
-Analyze this sentence written by a language learner: ""{sentence}"".
+You are an encouraging, expert language tutor and grammar verifier for the {langName} language.
+Analyze this diary sentence written by a language learner: ""{sentence}"".
 
-PRIMARY PRINCIPLE - AVOID UNNECESSARY STYLISTIC EDITS:
-- If the sentence is grammatically valid, understandable, and free of actual grammatical, spelling, agreement, or broken syntax errors, ACCEPT IT AS CORRECT!
-- Even if the sentence sounds somewhat simple, textbook-like, literal, or slightly unidiomatic (not 100% how a native speaker might say it), DO NOT REWRITE IT! Do NOT paraphrase or replace words with fancy synonyms!
-- The user must NEVER get trapped in an endless loop of stylistic rephrasing for a sentence that is already grammatically correct.
+TARGET LANGUAGE: {langName} (language code: {language})
+The entire sentence MUST be in {langName}.
 
-WHEN TO MARK AS CORRECT (isCorrection: false):
-- The sentence follows the grammatical rules of {language}.
-- Word order is valid (even if alternative word orders exist).
-- Subject-verb, gender, and number agreements are correct.
-- Words are spelled correctly.
--> In this case, return EXACTLY ONE segment containing the exact original sentence with isCorrection: false.
+CRITICAL PRINCIPLE 1: MANDATORY CORRECTION OF ALL OBJECTIVE ERRORS
+- You MUST correct all grammatical, agreement, lexical, and spelling defects:
+  1. Grammatical & agreement errors: wrong grammatical gender or article (e.g. Italian 'una libro' MUST be corrected to 'un libro', Spanish 'la problema' -> 'el problema'), wrong verb conjugation/form (e.g. 'Io andare' -> 'Io vado', 'She go' -> 'She goes'), wrong auxiliary verb (e.g. Italian 'ho andato' -> 'sono andato'), wrong plural/singular agreement (e.g. 'tre gatto' -> 'tre gatti'), missing required preposition or article.
+  2. Foreign words / code-switching: When learners do not know a word in {langName}, they insert words in another language (e.g. English, Russian, Spanish). YOU MUST REPLACE all foreign words/phrases with their natural equivalent in {langName} and mark with isCorrection: true.
+  3. Spelling errors & typos: misspelled words in {langName}.
+- When correcting, preserve as much of the user's original words and sentence structure as possible. Correct ONLY the broken word(s)!
 
-WHEN TO SUGGEST CORRECTIONS (isCorrection: true):
-- Only when there is an OBJECTIVE ERROR:
-  1. Grammar errors: wrong tense, wrong verb conjugation, wrong grammatical case/gender/number agreement, missing required preposition or article.
-  2. Spelling errors: typos or misspelled words.
-  3. Ungrammatical word order: word order that is grammatically incorrect or breaks the syntactic rules of {language}.
-- When correcting, preserve as much of the user's original words and structure as possible. Correct ONLY the broken parts.
+CRITICAL PRINCIPLE 2: FORBIDDEN TO SUGGEST TRIVIAL, IDENTICAL, OR PURELY STYLISTIC EDITS
+- If the sentence has NO objective grammar, agreement, spelling, or foreign-word errors, ACCEPT IT AS CORRECT!
+- DO NOT rewrite sentences just to sound 'more natural', 'more poetic', or 'more native' if the original is already grammatically valid.
+- NEVER replace a word with the EXACT SAME word or an equivalent synonym and mark it as a correction!
+- DO NOT flag missing trailing punctuation (e.g. adding a period at the end) as an error! If the words and grammar are valid, accept the sentence as correct!
+- If the sentence is correct, return EXACTLY ONE segment containing the full original sentence with isCorrection: false. Do NOT split a correct sentence into multiple segments!
 
-CRITICAL RULES FOR SPACING:
-- If the sentence has NO errors, return EXACTLY ONE segment containing the full original sentence with isCorrection: false. Do NOT split correct sentences into words!
-- When correcting, preserve all spaces, punctuation, and capitalization so that joining all segments' texts (string concatenation) produces the complete, grammatically correct sentence WITH ALL SPACES INTACT.
+SPACING AND SEGMENT RULES:
+- When correcting, preserve all spaces, punctuation, and capitalization so that string concatenation of all segments produces the complete, grammatically correct sentence WITH ALL SPACES INTACT.
 - Do NOT output bare words without spaces! Include trailing or leading spaces in the segments as needed.
 
-Example 1 (Objective grammar error in verb):
+Example 1 (Foreign word in English inserted into Italian):
+Target language: Italian
+Input: ""Oggi ho mangiato una delicious mela.""
+Output JSON:
+{{
+  ""original"": ""Oggi ho mangiato una delicious mela."",
+  ""segments"": [
+    {{ ""text"": ""Oggi ho mangiato una "", ""isCorrection"": false }},
+    {{ ""text"": ""deliziosa"", ""isCorrection"": true }},
+    {{ ""text"": "" mela."", ""isCorrection"": false }}
+  ]
+}}
+
+Example 2 (Foreign word in Russian inserted into Italian):
+Target language: Italian
+Input: ""Io voglio comprare una машина.""
+Output JSON:
+{{
+  ""original"": ""Io voglio comprare una машина."",
+  ""segments"": [
+    {{ ""text"": ""Io voglio comprare una "", ""isCorrection"": false }},
+    {{ ""text"": ""macchina."", ""isCorrection"": true }}
+  ]
+}}
+
+Example 3 (Foreign word inserted into English):
+Target language: English
+Input: ""Yesterday I went to the магазин.""
+Output JSON:
+{{
+  ""original"": ""Yesterday I went to the магазин."",
+  ""segments"": [
+    {{ ""text"": ""Yesterday I went to the "", ""isCorrection"": false }},
+    {{ ""text"": ""store."", ""isCorrection"": true }}
+  ]
+}}
+
+Example 4 (Objective grammar error in verb):
+Target language: Italian
 Input: ""Io andare a casa.""
 Output JSON:
 {{
@@ -69,34 +106,38 @@ Output JSON:
   ]
 }}
 
-Example 2 (Ungrammatical word order):
-Input: ""Yesterday to the store went I.""
+Example 5 (Objective grammar error in article / gender agreement):
+Target language: Italian
+Input: ""Ho comprato una libro nuovo.""
 Output JSON:
 {{
-  ""original"": ""Yesterday to the store went I."",
+  ""original"": ""Ho comprato una libro nuovo."",
   ""segments"": [
-    {{ ""text"": ""Yesterday "", ""isCorrection"": false }},
-    {{ ""text"": ""I went to the store."", ""isCorrection"": true }}
+    {{ ""text"": ""Ho comprato "", ""isCorrection"": false }},
+    {{ ""text"": ""un"", ""isCorrection"": true }},
+    {{ ""text"": "" libro nuovo."", ""isCorrection"": false }}
   ]
 }}
 
-Example 3 (Simple or literal, but grammatically valid - MUST BE ACCEPTED AS CORRECT):
-Input: ""I want to drink water because I have thirst.""
+Example 6 (Simple or literal, but grammatically valid - MUST BE ACCEPTED AS CORRECT):
+Target language: English
+Input: ""I want to drink water because I am thirsty.""
 Output JSON:
 {{
-  ""original"": ""I want to drink water because I have thirst."",
+  ""original"": ""I want to drink water because I am thirsty."",
   ""segments"": [
-    {{ ""text"": ""I want to drink water because I have thirst."", ""isCorrection"": false }}
+    {{ ""text"": ""I want to drink water because I am thirsty."", ""isCorrection"": false }}
   ]
 }}
 
-Example 4 (Completely correct sentence):
-Input: ""Io voglio andare al mare.""
+Example 7 (Completely correct sentence without trailing period - MUST BE ACCEPTED AS CORRECT):
+Target language: Italian
+Input: ""Io voglio andare al mare""
 Output JSON:
 {{
-  ""original"": ""Io voglio andare al mare."",
+  ""original"": ""Io voglio andare al mare"",
   ""segments"": [
-    {{ ""text"": ""Io voglio andare al mare."", ""isCorrection"": false }}
+    {{ ""text"": ""Io voglio andare al mare"", ""isCorrection"": false }}
   ]
 }}
 
@@ -156,6 +197,21 @@ Return strictly JSON with this structure:
 
             bool hasFlaggedCorrections = analysis.Segments.Any(s => s.IsCorrection);
             var concatenatedText = string.Concat(analysis.Segments.Select(s => s.Text ?? string.Empty)).Trim();
+
+            // If all words in the returned text are identical to the original sentence,
+            // no actual words, grammar, spelling or foreign words were modified.
+            // In this case, always treat the sentence as fully correct!
+            if (AreWordsIdentical(sentence, concatenatedText))
+            {
+                return new SentenceAnalysis
+                {
+                    Original = sentence,
+                    Segments = new List<TextSegment>
+                    {
+                        new() { Text = sentence, IsCorrection = false }
+                    }
+                };
+            }
 
             // Defensive step 1: If no segment was marked as a correction
             if (!hasFlaggedCorrections)
@@ -220,6 +276,19 @@ Return strictly JSON with this structure:
                 return CreateFallback(sentence);
             }
 
+            var cleanedFullText = string.Concat(cleanedSegments.Select(s => s.Text ?? string.Empty)).Trim();
+            if (!cleanedSegments.Any(s => s.IsCorrection) || AreWordsIdentical(sentence, cleanedFullText))
+            {
+                return new SentenceAnalysis
+                {
+                    Original = sentence,
+                    Segments = new List<TextSegment>
+                    {
+                        new() { Text = sentence, IsCorrection = false }
+                    }
+                };
+            }
+
             return new SentenceAnalysis
             {
                 Original = sentence,
@@ -241,11 +310,12 @@ Return strictly JSON with this structure:
             return string.Empty;
         }
 
+        var langName = LanguageOption.GetLanguageName(sourceLanguage);
         var personaDescription = persona.GetPromptDescription();
 
         var prompt = $@"
 You are an introspective AI diary writing coach.
-The user is writing their personal diary in: {sourceLanguage}.
+The user is writing their personal diary in: {langName} (language code: {sourceLanguage}).
 Active persona: {personaDescription}.
 
 Current diary entry text so far:
@@ -257,11 +327,11 @@ Task:
 1. Analyze the context, theme, and language complexity of the user's written diary entry.
 2. Formulate EXACTLY ONE short, targeted, open-ended question that helps the user overcome writer's block and expand their thought according to the active persona.
 3. Match the language difficulty to the user's demonstrated proficiency level (Krashen's i+1 principle: natural and accessible, not overly complex).
-4. Do NOT include greetings, praise, introductory phrases, conversational filler, or translations. Formulate strictly the single question in {sourceLanguage}.
+4. Do NOT include greetings, praise, introductory phrases, conversational filler, or translations. Formulate strictly the single question in {langName}.
 
 Return strictly JSON with this structure:
 {{
-  ""question"": ""Single question in {sourceLanguage}""
+  ""question"": ""Single question in {langName}""
 }}
 ";
 
@@ -318,9 +388,11 @@ Return strictly JSON with this structure:
             return string.Empty;
         }
 
+        var langName = LanguageOption.GetLanguageName(language);
+
         var prompt = $@"
 You are an AI diary assistant.
-Analyze these first sentences from a personal diary written in {language}:
+Analyze these first sentences from a personal diary written in {langName}:
 """"""
 {diaryContext}
 """"""
@@ -328,13 +400,13 @@ Analyze these first sentences from a personal diary written in {language}:
 Task:
 Generate a very concise, meaningful, and engaging title for this diary entry.
 Rules:
-1. Formulate strictly in {language}.
+1. Formulate strictly in {langName}.
 2. Maximum 2 to 5 words. No quotation marks, no period at the end.
 3. Capture the essence or main topic of what the writer is talking about.
 
 Return strictly JSON with this structure:
 {{
-  ""title"": ""Short Title in {language}""
+  ""title"": ""Short Title in {langName}""
 }}
 ";
 
@@ -381,6 +453,37 @@ Return strictly JSON with this structure:
             System.Diagnostics.Debug.WriteLine($"Error generating title: {ex.Message}");
             return string.Empty;
         }
+    }
+
+    private static readonly char[] WordTrimChars = new[]
+    {
+        '.', '!', '?', ',', ';', ':', '—', '-', '"', '\'', '»', '«', '”', '“', '(', ')', '[', ']', '¿', '¡'
+    };
+
+    private static bool AreWordsIdentical(string s1, string s2)
+    {
+        if (string.Equals(s1.Trim(), s2.Trim(), StringComparison.Ordinal))
+            return true;
+
+        var w1 = s1.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                   .Select(w => w.Trim(WordTrimChars))
+                   .Where(w => !string.IsNullOrEmpty(w))
+                   .ToList();
+
+        var w2 = s2.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                   .Select(w => w.Trim(WordTrimChars))
+                   .Where(w => !string.IsNullOrEmpty(w))
+                   .ToList();
+
+        if (w1.Count != w2.Count) return false;
+
+        for (int i = 0; i < w1.Count; i++)
+        {
+            if (!string.Equals(w1[i], w2[i], StringComparison.Ordinal))
+                return false;
+        }
+
+        return true;
     }
 
     private static SentenceAnalysis CreateFallback(string sentence)
