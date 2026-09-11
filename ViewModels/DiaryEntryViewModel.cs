@@ -45,6 +45,8 @@ public partial class DiaryEntryViewModel : BaseViewModel
     private bool _isGeneratingPrompt;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasActivePrompt))]
+    [NotifyPropertyChangedFor(nameof(ShowActivePromptCard))]
     private string? _currentPromptQuestion;
 
     [ObservableProperty]
@@ -162,6 +164,11 @@ public partial class DiaryEntryViewModel : BaseViewModel
     {
         ActivePersona = _settingsService.GetDefaultPersona();
         ShowPromptTranslation = _settingsService.GetShowBotPromptTranslation();
+        CurrentPromptQuestion = null;
+        CurrentPromptQuestionTranslation = null;
+        PendingAnalysis = null;
+        CurrentInput = string.Empty;
+        OnPropertyChanged(nameof(ShowActivePromptCard));
 
         if (!string.IsNullOrWhiteSpace(EntryId))
         {
@@ -321,6 +328,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
 
         OnPropertyChanged(nameof(HasPendingAnalysis));
         OnPropertyChanged(nameof(HasActivePrompt));
+        OnPropertyChanged(nameof(ShowActivePromptCard));
     }
 
     private async Task TryGenerateTitleAsync()
@@ -387,6 +395,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
                 }
 
                 OnPropertyChanged(nameof(HasActivePrompt));
+                OnPropertyChanged(nameof(ShowActivePromptCard));
                 OnPropertyChanged(nameof(HasPromptTranslationAndEnabled));
             }
         }
@@ -433,6 +442,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
         CurrentPromptQuestion = null;
         CurrentPromptQuestionTranslation = null;
         OnPropertyChanged(nameof(HasActivePrompt));
+        OnPropertyChanged(nameof(ShowActivePromptCard));
     }
 
     [RelayCommand]
