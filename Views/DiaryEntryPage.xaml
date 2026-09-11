@@ -30,7 +30,8 @@
     <Grid RowDefinitions="*, Auto">
         
         <!-- Sentences History List -->
-        <CollectionView Grid.Row="0" 
+        <CollectionView x:Name="SentencesCollectionView"
+                        Grid.Row="0" 
                         ItemsSource="{Binding Sentences}"
                         EmptyView="{Binding EmptySentencesHint}"
                         Margin="12,8,12,6">

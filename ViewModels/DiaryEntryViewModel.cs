@@ -66,6 +66,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
     public IReadOnlyList<PersonaType> AvailablePersonas { get; } = Enum.GetValues<PersonaType>();
 
     public ObservableCollection<DiarySentence> Sentences { get; } = new();
+    public event Action<int>? RequestScrollToIndex;
 
     public bool HasPendingAnalysis => PendingAnalysis != null;
     public bool IsAnalysisCorrect => PendingAnalysis != null && !PendingAnalysis.HasCorrections;
@@ -287,6 +288,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
             if (index >= 0)
             {
                 Sentences[index] = _editingSentence;
+                RequestScrollToIndex?.Invoke(index);
             }
 
             _editingSentence = null;
@@ -311,6 +313,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
             };
 
             Sentences.Add(sentence);
+            RequestScrollToIndex?.Invoke(Sentences.Count - 1);
 
             // After the first couple of sentences, generate a short meaningful title for the entry
             if (Sentences.Count >= 2 && (string.IsNullOrWhiteSpace(_entry.Title) || Title == AppStrings.NewEntryTitle))
