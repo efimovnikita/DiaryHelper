@@ -27,7 +27,11 @@
         </VerticalStackLayout>
     </Shell.TitleView>
 
-    <Grid RowDefinitions="*, Auto">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition x:Name="HistoryRowDef" Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
         
         <!-- Sentences History List -->
         <CollectionView x:Name="SentencesCollectionView"
@@ -111,8 +115,33 @@
         </CollectionView>
 
         <!-- Bottom Input & AI Assistant Area -->
-        <Border Grid.Row="1" Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="14" StrokeShape="RoundRectangle 20,20,0,0">
-            <VerticalStackLayout Spacing="10">
+        <Border Grid.Row="1" Stroke="#E2E8F0" StrokeThickness="1" BackgroundColor="White" Padding="14,10" StrokeShape="RoundRectangle 20,20,0,0">
+            <VerticalStackLayout Spacing="8">
+
+                <!-- Collapsed History Quick Expand/Collapse Bar -->
+                <Border x:Name="HistoryToggleBar"
+                        IsVisible="False"
+                        BackgroundColor="#F8FAFC"
+                        Stroke="#E2E8F0"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 8"
+                        Padding="10,6"
+                        HorizontalOptions="Fill">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnToggleHistoryTapped" />
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="Auto, *, Auto">
+                        <Label Grid.Column="0" Text="📖" FontSize="12" VerticalOptions="Center" />
+                        <Label Grid.Column="1" 
+                               Text="{Binding WordCountStats, StringFormat='Previous sentences ({0})'}" 
+                               FontSize="11" 
+                               FontAttributes="Bold"
+                               TextColor="#475569" 
+                               Margin="6,0,0,0"
+                               VerticalOptions="Center" />
+                        <Label x:Name="HistoryToggleIcon" Grid.Column="2" Text="▼" FontSize="11" TextColor="#94A3B8" VerticalOptions="Center" />
+                    </Grid>
+                </Border>
 
                 <!-- Active Persona Quick Switcher Chips (Scrollable so never clipped) -->
                 <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
@@ -312,9 +341,12 @@
                 </Grid>
 
                 <!-- Input Text Area (Generous vertical room to see multiple lines) -->
-                <Editor Text="{Binding CurrentInput}" 
+                <Editor x:Name="SentenceInputEditor"
+                        Text="{Binding CurrentInput}" 
                         Placeholder="{Binding InputPlaceholder}"
-                        HeightRequest="95"
+                        Focused="OnInputEditorFocused"
+                        Unfocused="OnInputEditorUnfocused"
+                        HeightRequest="110"
                         BackgroundColor="#F1F5F9"
                         TextColor="#0F172A"
                         AutoSize="Disabled" />
