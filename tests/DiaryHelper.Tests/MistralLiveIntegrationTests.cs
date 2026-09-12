@@ -170,4 +170,60 @@ public class MistralLiveIntegrationTests
         Assert.Equal(0, falseNegatives);
         Assert.Equal(total, passedCount);
     }
+
+    [Fact]
+    public async Task ReproduceReportedMistralIssues()
+    {
+        var apiKey = Environment.GetEnvironmentVariable("MISTRAL_API_KEY");
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            _output.WriteLine("SKIPPED: MISTRAL_API_KEY environment variable is not set.");
+            return;
+        }
+
+        using var httpClient = new HttpClient();
+        var settings = new LiveSettingsService(apiKey);
+        var service = new MistralService(httpClient, settings);
+
+        // Case 1: Screenshot 1 - "Quasi instantaneamente ho trovato il modello molto bello di Casio."
+        var sent1 = "Quasi instantaneamente ho trovato il modello molto bello di Casio.";
+        var res1 = await service.AnalyzeSentenceAsync(sent1, "it");
+
+        _output.WriteLine("=== CASE 1: Typo in single word (instantaneamente -> istantaneamente) ===");
+        _output.WriteLine($"Original:  \"{sent1}\"");
+        _output.WriteLine($"Corrected: \"{res1.CorrectedFullText}\"");
+        _output.WriteLine($"HasErrors: {res1.HasCorrections}");
+        for (int i = 0; i < res1.Segments.Count; i++)
+        {
+            _output.WriteLine($"  Segment[{i}]: Text=\"{res1.Segments[i].Text}\", IsCorrection={res1.Segments[i].IsCorrection}");
+        }
+
+        // Case 2: Screenshot 2 - "L'azienda di Casio ha deciso di usare il modello di Seiko per non fallire con il proprio meccanismo, perché non hanno un'esperienza con i meccanismi meccanici."
+        var sent2 = "L'azienda di Casio ha deciso di usare il modello di Seiko per non fallire con il proprio meccanismo, perché non hanno un'esperienza con i meccanismi meccanici.";
+        var res2 = await service.AnalyzeSentenceAsync(sent2, "it");
+
+        _output.WriteLine("=== CASE 2: Long sentence with Casio/Seiko ===");
+        _output.WriteLine($"Original:  \"{sent2}\"");
+        _output.WriteLine($"Corrected: \"{res2.CorrectedFullText}\"");
+        _output.WriteLine($"HasErrors: {res2.HasCorrections}");
+        for (int i = 0; i < res2.Segments.Count; i++)
+        {
+            _output.WriteLine($"  Segment[{i}]: Text=\"{res2.Segments[i].Text}\", IsCorrection={res2.Segments[i].IsCorrection}");
+        }
+
+        // Assertions for Case 1:
+        // 1. Must catch typo instantaneamente -> istantaneamente
+        Assert.True(res1.HasCorrections, "Should detect typo in instantaneamente");
+        Assert.Contains("istantaneamente", res1.CorrectedFullText);
+        // 2. Unchanged words like "Quasi", "modello", "Casio" must NOT be marked as corrections!
+        Assert.False(res1.Segments.Any(s => s.IsCorrection && s.Text.Trim() == "Quasi"), "Unchanged word 'Quasi' should NOT be marked as correction!");
+        Assert.False(res1.Segments.Any(s => s.IsCorrection && s.Text.Contains("modello")), "Unchanged word 'modello' should NOT be marked as correction!");
+        Assert.False(res1.Segments.Any(s => s.IsCorrection && s.Text.Contains("Casio")), "Unchanged word 'Casio' should NOT be marked as correction!");
+
+        // Assertions for Case 2:
+        // Must NOT hallucinate consecutive duplicate or conflicting verbs like "hanno hanno" or "hanno ha"!
+        Assert.DoesNotContain("hanno hanno", res2.CorrectedFullText);
+        Assert.DoesNotContain("hanno ha", res2.CorrectedFullText);
+        Assert.DoesNotContain("ha hanno", res2.CorrectedFullText);
+    }
 }

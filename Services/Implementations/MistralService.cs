@@ -52,6 +52,16 @@ CRITICAL PRINCIPLE 2: FORBIDDEN TO SUGGEST TRIVIAL, IDENTICAL, OR PURELY STYLIST
 - DO NOT flag missing trailing punctuation (e.g. adding a period at the end) as an error! If the words and grammar are valid, accept the sentence as correct!
 - If the sentence is correct, return EXACTLY ONE segment containing the full original sentence with isCorrection: false. Do NOT split a correct sentence into multiple segments!
 
+CRITICAL PRINCIPLE 3: STRICT LOCALIZATION & GRANULARITY OF CORRECTIONS
+- ONLY the exact word(s) that are erroneous, misspelled, or foreign must have isCorrection: true!
+- NEVER wrap the entire sentence or unchanged surrounding words into an isCorrection: true segment!
+- If only one word in a sentence has a typo (e.g. 'instantaneamente' instead of 'istantaneamente'), keep all other words in isCorrection: false segments!
+- Unchanged words MUST NEVER have isCorrection: true!
+
+CRITICAL PRINCIPLE 4: NO DUPLICATE WORDS OR TOKEN STUTTERS
+- NEVER repeat words consecutively (e.g. NEVER output 'hanno hanno', 'hanno ha', 'di di')!
+- When correcting a word, output ONLY the single replacement word cleanly. NEVER output both the old word and the new word!
+
 SPACING AND SEGMENT RULES:
 - When correcting, preserve all spaces, punctuation, and capitalization so that string concatenation of all segments produces the complete, grammatically correct sentence WITH ALL SPACES INTACT.
 - Do NOT output bare words without spaces! Include trailing or leading spaces in the segments as needed.
@@ -138,6 +148,19 @@ Output JSON:
   ""original"": ""Io voglio andare al mare"",
   ""segments"": [
     {{ ""text"": ""Io voglio andare al mare"", ""isCorrection"": false }}
+  ]
+}}
+
+Example 8 (Single-word typo - isolate ONLY that specific word):
+Target language: Italian
+Input: ""Quasi instantaneamente ho trovato il modello molto bello di Casio.""
+Output JSON:
+{{
+  ""original"": ""Quasi instantaneamente ho trovato il modello molto bello di Casio."",
+  ""segments"": [
+    {{ ""text"": ""Quasi "", ""isCorrection"": false }},
+    {{ ""text"": ""istantaneamente"", ""isCorrection"": true }},
+    {{ ""text"": "" ho trovato il modello molto bello di Casio."", ""isCorrection"": false }}
   ]
 }}
 
@@ -276,7 +299,32 @@ Return strictly JSON with this structure:
                 return CreateFallback(sentence);
             }
 
+            // Remove stutter word clashes between adjacent segments (e.g. prev ends with "hanno " and curr is "ha")
+            for (int i = 1; i < cleanedSegments.Count; i++)
+            {
+                if (cleanedSegments[i].IsCorrection && cleanedSegments[i - 1].Text != null)
+                {
+                    var prevText = cleanedSegments[i - 1].Text!;
+                    var currText = cleanedSegments[i].Text?.Trim() ?? string.Empty;
+
+                    if (string.Equals(currText, "ha", StringComparison.OrdinalIgnoreCase) && prevText.TrimEnd().EndsWith("hanno", StringComparison.OrdinalIgnoreCase))
+                    {
+                        int idx = prevText.LastIndexOf("hanno", StringComparison.OrdinalIgnoreCase);
+                        cleanedSegments[i - 1].Text = prevText.Substring(0, idx);
+                    }
+                    else if (!string.IsNullOrEmpty(currText) && prevText.TrimEnd().EndsWith(currText, StringComparison.OrdinalIgnoreCase) && !sentence.Contains(currText + " " + currText))
+                    {
+                        int idx = prevText.LastIndexOf(currText, StringComparison.OrdinalIgnoreCase);
+                        cleanedSegments[i - 1].Text = prevText.Substring(0, idx);
+                    }
+                }
+            }
+
             var cleanedFullText = string.Concat(cleanedSegments.Select(s => s.Text ?? string.Empty)).Trim();
+            
+            // Deduplicate accidental model stutter repetitions (e.g. "hanno hanno" -> "hanno")
+            cleanedFullText = RemoveAccidentalDuplications(sentence, cleanedFullText);
+
             if (!cleanedSegments.Any(s => s.IsCorrection) || AreWordsIdentical(sentence, cleanedFullText))
             {
                 return new SentenceAnalysis
@@ -289,10 +337,13 @@ Return strictly JSON with this structure:
                 };
             }
 
+            // Granularity refinement: isolate unchanged prefix/suffix words inside multi-word correction segments
+            var granularSegments = RefineSegmentGranularity(sentence, cleanedSegments);
+
             return new SentenceAnalysis
             {
                 Original = sentence,
-                Segments = cleanedSegments
+                Segments = granularSegments
             };
         }
         catch (Exception ex)
@@ -484,6 +535,130 @@ Return strictly JSON with this structure:
         }
 
         return true;
+    }
+
+    private static string RemoveAccidentalDuplications(string originalSentence, string correctedText)
+    {
+        if (string.IsNullOrWhiteSpace(correctedText)) return correctedText;
+
+        // 1. Remove conflicting duplicate verbs (e.g. "hanno ha" -> "ha", "hanno hanno" -> "hanno")
+        correctedText = System.Text.RegularExpressions.Regex.Replace(
+            correctedText,
+            @"\bhanno\s+ha\b|\bha\s+hanno\b",
+            "ha",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        // 2. Match duplicated consecutive words (e.g. "hanno hanno", "the the", "de de")
+        var regex = new System.Text.RegularExpressions.Regex(@"\b([a-zA-Zà-öø-ÿÀ-ÖØ-ß]+)\s+\1\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        return regex.Replace(correctedText, match =>
+        {
+            if (originalSentence.IndexOf(match.Value, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return match.Value;
+            }
+            return match.Groups[1].Value;
+        });
+    }
+
+    private static List<TextSegment> RefineSegmentGranularity(string originalSentence, List<TextSegment> segments)
+    {
+        if (segments == null || segments.Count == 0) return segments ?? new List<TextSegment>();
+
+        var result = new List<TextSegment>();
+        var origWords = originalSentence.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+
+        foreach (var seg in segments)
+        {
+            var text = seg.Text ?? string.Empty;
+            if (!seg.IsCorrection || !text.Contains(' '))
+            {
+                result.Add(seg);
+                continue;
+            }
+
+            var segWords = text.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            if (segWords.Count <= 1)
+            {
+                result.Add(seg);
+                continue;
+            }
+
+            string Clean(string w) => w.Trim(WordTrimChars).ToLowerInvariant();
+
+            int prefixWordCount = 0;
+            while (prefixWordCount < segWords.Count && prefixWordCount < origWords.Count &&
+                   Clean(segWords[prefixWordCount]) == Clean(origWords[prefixWordCount]))
+            {
+                prefixWordCount++;
+            }
+
+            int suffixWordCount = 0;
+            int origEnd = origWords.Count - 1;
+            int segEnd = segWords.Count - 1;
+            while (segEnd >= prefixWordCount && origEnd >= prefixWordCount &&
+                   Clean(segWords[segEnd]) == Clean(origWords[origEnd]))
+            {
+                suffixWordCount++;
+                segEnd--;
+                origEnd--;
+            }
+
+            if (prefixWordCount == 0 && suffixWordCount == 0)
+            {
+                result.Add(seg);
+                continue;
+            }
+
+            int prefixCharLen = 0;
+            if (prefixWordCount > 0)
+            {
+                int pos = 0;
+                for (int w = 0; w < prefixWordCount; w++)
+                {
+                    int found = text.IndexOf(segWords[w], pos, StringComparison.Ordinal);
+                    pos = found + segWords[w].Length;
+                }
+                while (pos < text.Length && char.IsWhiteSpace(text[pos]))
+                {
+                    pos++;
+                }
+                prefixCharLen = pos;
+                result.Add(new TextSegment { Text = text.Substring(0, prefixCharLen), IsCorrection = false });
+            }
+
+            int suffixCharStart = text.Length;
+            if (suffixWordCount > 0)
+            {
+                int firstSuffixWordIdx = segWords.Count - suffixWordCount;
+                int pos = text.Length;
+                for (int w = segWords.Count - 1; w >= firstSuffixWordIdx; w--)
+                {
+                    int found = text.LastIndexOf(segWords[w], pos - 1, StringComparison.Ordinal);
+                    pos = found;
+                }
+                suffixCharStart = pos;
+            }
+
+            if (suffixCharStart > prefixCharLen)
+            {
+                result.Add(new TextSegment
+                {
+                    Text = text.Substring(prefixCharLen, suffixCharStart - prefixCharLen),
+                    IsCorrection = true
+                });
+            }
+
+            if (suffixWordCount > 0 && suffixCharStart < text.Length)
+            {
+                result.Add(new TextSegment
+                {
+                    Text = text.Substring(suffixCharStart),
+                    IsCorrection = false
+                });
+            }
+        }
+
+        return result;
     }
 
     private static SentenceAnalysis CreateFallback(string sentence)

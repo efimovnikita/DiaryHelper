@@ -272,22 +272,14 @@
                     </Grid>
                 </Border>
 
-                <!-- Input Text Area -->
-                <Editor Text="{Binding CurrentInput}" 
-                        Placeholder="{Binding InputPlaceholder}"
-                        HeightRequest="75"
-                        BackgroundColor="#F1F5F9"
-                        TextColor="#0F172A"
-                        AutoSize="Disabled" />
-
-                <!-- Action Toolbar -->
+                <!-- Action Toolbar (Check & Add Buttons placed ABOVE the input area) -->
                 <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
                     <Border Grid.Column="0"
                             BackgroundColor="#F1F5F9"
                             Stroke="#E2E8F0"
                             StrokeThickness="1"
                             StrokeShape="RoundRectangle 10"
-                            HeightRequest="42">
+                            HeightRequest="40">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding CheckSentenceCommand}" />
                         </Border.GestureRecognizers>
@@ -315,11 +307,19 @@
                             TextColor="White"
                             FontAttributes="Bold"
                             CornerRadius="10"
-                            HeightRequest="42"
+                            HeightRequest="40"
                             FontSize="13" />
                 </Grid>
 
-                <!-- Export Options Bar -->
+                <!-- Input Text Area (Generous vertical room to see multiple lines) -->
+                <Editor Text="{Binding CurrentInput}" 
+                        Placeholder="{Binding InputPlaceholder}"
+                        HeightRequest="95"
+                        BackgroundColor="#F1F5F9"
+                        TextColor="#0F172A"
+                        AutoSize="Disabled" />
+
+                <!-- Export Options Bar (Secondary actions below the input area) -->
                 <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
                     <Button Grid.Column="0"
                             Text="{Binding CopyPureButton}"
