@@ -144,6 +144,8 @@ public partial class WelcomeSettingsViewModel : BaseViewModel
         }
     }
 
+    public Task AutoSaveAsync() => SaveSettingsInternalAsync();
+
     private async Task SaveSettingsInternalAsync()
     {
         await _settingsService.SetMistralApiKeyAsync(MistralApiKey);

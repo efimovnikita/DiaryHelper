@@ -16,42 +16,37 @@ public partial class DiaryEntryPage : ContentPage
     {
         MainThread.BeginInvokeOnMainThread(async () =>
         {
-            // Restore full history view when a sentence is confirmed/added
-            SetHistoryCollapsed(false);
-            try
-            {
-                SentenceInputEditor.Unfocus();
-            }
-            catch { }
+            // Update toggle bar visibility if this was the first sentence added
+            HistoryToggleBar.IsVisible = _viewModel.Sentences.Count > 0;
 
-            // Give UI layout a moment to render the newly added sentence card
-            await Task.Delay(150);
-            try
+            // Only scroll if history is currently expanded
+            if (HistoryRowDef.Height.Value > 0)
             {
-                if (_viewModel.Sentences.Count > index && index >= 0)
+                await Task.Delay(150);
+                try
                 {
-                    SentencesCollectionView.ScrollTo(index, position: ScrollToPosition.End, animate: true);
+                    if (_viewModel.Sentences.Count > index && index >= 0)
+                    {
+                        SentencesCollectionView.ScrollTo(index, position: ScrollToPosition.End, animate: true);
+                    }
                 }
-            }
-            catch
-            {
-                // ignore if view is detached
+                catch
+                {
+                    // ignore if view is detached
+                }
             }
         });
     }
 
     private void OnInputEditorFocused(object? sender, FocusEventArgs e)
     {
+        // Automatic collapse ONLY when user focuses the input editor
         SetHistoryCollapsed(true);
     }
 
     private void OnInputEditorUnfocused(object? sender, FocusEventArgs e)
     {
-        // When editor loses focus, if there is no draft text and no pending analysis, restore history view
-        if (string.IsNullOrWhiteSpace(_viewModel.CurrentInput) && !_viewModel.HasPendingAnalysis)
-        {
-            SetHistoryCollapsed(false);
-        }
+        // No automatic expand on unfocus; user controls expansion manually
     }
 
     private void OnToggleHistoryTapped(object? sender, TappedEventArgs e)
@@ -75,7 +70,7 @@ public partial class DiaryEntryPage : ContentPage
             {
                 HistoryRowDef.Height = new GridLength(1, GridUnitType.Star);
                 SentencesCollectionView.IsVisible = true;
-                HistoryToggleBar.IsVisible = false;
+                HistoryToggleBar.IsVisible = _viewModel.Sentences.Count > 0;
                 HistoryToggleIcon.Text = "▲";
             }
         });
@@ -87,6 +82,9 @@ public partial class DiaryEntryPage : ContentPage
         _viewModel.RequestScrollToIndex -= OnRequestScrollToIndex;
         _viewModel.RequestScrollToIndex += OnRequestScrollToIndex;
         await _viewModel.InitializeAsync();
+
+        // Start expanded for viewing existing diary entries
+        SetHistoryCollapsed(false);
 
         if (_viewModel.Sentences.Count > 0)
         {

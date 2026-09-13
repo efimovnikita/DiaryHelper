@@ -35,7 +35,7 @@
                         </Grid.GestureRecognizers>
 
                         <VerticalStackLayout Grid.Column="0" Spacing="3" VerticalOptions="Center">
-                            <Label Text="{Binding ApiKeysSectionTitle}" FontSize="17" FontAttributes="Bold" TextColor="#0F172A" />
+                            <Label Text="{Binding ApiKeysSectionTitle}" FontSize="17" FontAttributes="Bold" TextColor="#0F172A" LineBreakMode="NoWrap" />
                             <Label Text="{Binding ApiKeysStatusSubtitle}" FontSize="12" TextColor="#64748B" />
                         </VerticalStackLayout>
 
@@ -119,28 +119,6 @@
                                     TextColor="#1E293B" />
                         </VerticalStackLayout>
                     </Grid>
-
-                    <VerticalStackLayout Spacing="6">
-                        <Label Text="{Binding DefaultPersonaLabel}" FontSize="13" FontAttributes="Bold" TextColor="#475569" />
-                        <Picker ItemsSource="{Binding AvailablePersonas}"
-                                ItemDisplayBinding="{Binding DisplayName}"
-                                SelectedItem="{Binding SelectedPersonaOption}"
-                                BackgroundColor="#F1F5F9"
-                                TextColor="#1E293B" />
-                    </VerticalStackLayout>
-
-                    <!-- Toggle for Bot Kick-Question Translation -->
-                    <Grid ColumnDefinitions="*, Auto" Margin="0,4,0,0">
-                        <VerticalStackLayout Grid.Column="0" VerticalOptions="Center" Spacing="2">
-                            <Label Text="{Binding ShowBotPromptTranslationLabel}" FontSize="13" FontAttributes="Bold" TextColor="#475569" />
-                            <Label Text="{Binding ShowBotPromptTranslationHint}" FontSize="11" TextColor="#94A3B8" />
-                        </VerticalStackLayout>
-                        <Switch Grid.Column="1" 
-                                IsToggled="{Binding ShowBotPromptTranslation}" 
-                                OnColor="#4F46E5" 
-                                ThumbColor="#FFFFFF" 
-                                VerticalOptions="Center" />
-                    </Grid>
                 </VerticalStackLayout>
             </Border>
 
@@ -165,12 +143,6 @@
                         CornerRadius="14"
                         HeightRequest="48"
                         FontSize="15" />
-
-                <Button Text="{Binding SaveSettingsButton}"
-                        Command="{Binding SaveSettingsCommand}"
-                        BackgroundColor="Transparent"
-                        TextColor="#64748B"
-                        FontSize="14" />
             </VerticalStackLayout>
 
         </VerticalStackLayout>

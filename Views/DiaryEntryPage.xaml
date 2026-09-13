@@ -133,7 +133,7 @@
                     <Grid ColumnDefinitions="Auto, *, Auto">
                         <Label Grid.Column="0" Text="📖" FontSize="12" VerticalOptions="Center" />
                         <Label Grid.Column="1" 
-                               Text="{Binding WordCountStats, StringFormat='Previous sentences ({0})'}" 
+                               Text="{Binding PreviousSentencesBarText}" 
                                FontSize="11" 
                                FontAttributes="Bold"
                                TextColor="#475569" 

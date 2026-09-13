@@ -42,7 +42,7 @@ public class MistralLiveIntegrationTests
         public void SetTargetLanguage(string code) { }
         public PersonaType GetDefaultPersona() => PersonaType.Friend;
         public void SetDefaultPersona(PersonaType persona) { }
-        public bool GetShowBotPromptTranslation() => true;
+        public bool GetShowBotPromptTranslation() => false;
         public void SetShowBotPromptTranslation(bool show) { }
         public Task<bool> HasRequiredKeysAsync() => Task.FromResult(true);
     }

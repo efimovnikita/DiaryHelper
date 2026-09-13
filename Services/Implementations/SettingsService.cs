@@ -120,7 +120,7 @@ public class SettingsService : ISettingsService
 
     public bool GetShowBotPromptTranslation()
     {
-        return Preferences.Default.Get(ShowBotPromptTranslationSetting, true);
+        return Preferences.Default.Get(ShowBotPromptTranslationSetting, false);
     }
 
     public void SetShowBotPromptTranslation(bool show)

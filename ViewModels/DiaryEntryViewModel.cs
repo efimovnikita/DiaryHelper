@@ -55,7 +55,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasPromptTranslationAndEnabled))]
-    private bool _showPromptTranslation = true;
+    private bool _showPromptTranslation = false;
 
     [ObservableProperty]
     private PersonaType _activePersona = PersonaType.Friend;
@@ -147,6 +147,8 @@ public partial class DiaryEntryViewModel : BaseViewModel
         }
     }
 
+    public string PreviousSentencesBarText => string.Format(AppStrings.PreviousSentencesBar, $"{AppStrings.FormatWordCount(Sentences.Sum(s => DiaryEntry.CountWords(s.Text)))}, {AppStrings.FormatSentenceCount(Sentences.Count)}");
+
     public DiaryEntryViewModel(
         IDatabaseService databaseService,
         ISettingsService settingsService,
@@ -158,7 +160,11 @@ public partial class DiaryEntryViewModel : BaseViewModel
         _mistralService = mistralService;
         _translateService = translateService;
         Title = AppStrings.NewEntryTitle;
-        Sentences.CollectionChanged += (s, e) => OnPropertyChanged(nameof(WordCountStats));
+        Sentences.CollectionChanged += (s, e) =>
+        {
+            OnPropertyChanged(nameof(WordCountStats));
+            OnPropertyChanged(nameof(PreviousSentencesBarText));
+        };
     }
 
     public async Task InitializeAsync()
@@ -188,6 +194,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
                     Sentences.Add(s);
                 }
                 OnPropertyChanged(nameof(WordCountStats));
+                OnPropertyChanged(nameof(PreviousSentencesBarText));
                 return;
             }
         }
@@ -201,6 +208,7 @@ public partial class DiaryEntryViewModel : BaseViewModel
         };
         Sentences.Clear();
         OnPropertyChanged(nameof(WordCountStats));
+        OnPropertyChanged(nameof(PreviousSentencesBarText));
     }
 
     [RelayCommand]

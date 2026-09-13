@@ -22,7 +22,7 @@ public static class AppStrings
         ? "Языковая практика с AI" 
         : "Language practice with AI";
 
-    public static string ApiKeysSectionTitle => IsRussian ? "🔑 Облачные сервисы (API Keys)" : "🔑 Cloud Services (API Keys)";
+    public static string ApiKeysSectionTitle => IsRussian ? "🔑 Облачные сервисы" : "🔑 Cloud Services";
     public static string ApiKeysConfiguredBadge => IsRussian ? "✅ Настроены" : "✅ Configured";
     public static string ApiKeysExpandHint => IsRussian ? "Нажмите, чтобы настроить ключи" : "Tap to view or change keys";
     public static string ApiKeysCollapseHint => IsRussian ? "Нажмите, чтобы скрыть" : "Tap to collapse";
@@ -80,6 +80,7 @@ public static class AppStrings
     public static string TimeoutTitle => IsRussian ? "Таймаут" : "Timeout";
     public static string TimeoutMessage => IsRussian ? "Проверка заняла больше 10 секунд. Пожалуйста, попробуйте снова." : "Checking took longer than 10 seconds. Please try again.";
     public static string BotPromptTitle => IsRussian ? "Подсказка AI" : "AI Prompt";
+    public static string PreviousSentencesBar => IsRussian ? "Предыдущие предложения ({0})" : "Previous sentences ({0})";
 
     // Personas
     public static string PersonaFriend => IsRussian ? "🧘 Друг" : "🧘 Friend";

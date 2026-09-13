@@ -17,4 +17,10 @@ public partial class WelcomeSettingsPage : ContentPage
         base.OnAppearing();
         await _viewModel.InitializeAsync();
     }
+
+    protected override async void OnDisappearing()
+    {
+        base.OnDisappearing();
+        await _viewModel.AutoSaveAsync();
+    }
 }
